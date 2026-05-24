@@ -1,0 +1,45 @@
+<section class="page-header">
+  <div>
+    <h1>Clinics</h1>
+    <p>Create demo clinics and open clinic details.</p>
+  </div>
+</section>
+
+<section class="panel form-panel">
+  <h2>{{ editingId() ? 'Edit clinic' : 'Add clinic' }}</h2>
+  <div class="form-grid">
+    <label>Name <input [(ngModel)]="form.name" /></label>
+    <label>Location <input [(ngModel)]="form.location" /></label>
+    <button class="button" (click)="save()">{{ editingId() ? 'Update' : 'Add' }}</button>
+  </div>
+  @if (error()) { <div class="inline-error">{{ error() }}</div> }
+</section>
+
+<section class="panel">
+  @if (loading()) {
+    <div class="state">Loading clinics...</div>
+  } @else if (clinics().length === 0) {
+    <div class="empty">No clinics yet.</div>
+  } @else {
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Name</th><th>Location</th><th>Patients</th><th></th></tr>
+        </thead>
+        <tbody>
+          @for (clinic of clinics(); track clinic.id) {
+            <tr>
+              <td><a [routerLink]="['/clinics', clinic.id]">{{ clinic.name }}</a></td>
+              <td>{{ clinic.location || 'Not set' }}</td>
+              <td>{{ clinic.patientCount }}</td>
+              <td class="actions">
+                <button (click)="edit(clinic)">Edit</button>
+                <button class="danger" (click)="remove(clinic)">Delete</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>

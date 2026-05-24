@@ -1,0 +1,59 @@
+<section class="page-header">
+  <div>
+    <a routerLink="/clinics" class="back-link">Clinics</a>
+    <h1>{{ clinic()?.name || 'Clinic' }}</h1>
+    <p>{{ clinic()?.location || 'Location not set' }}</p>
+  </div>
+  <button class="button secondary" (click)="generatePatients()">Generate 10 Patients</button>
+</section>
+
+@if (error()) { <div class="state error">{{ error() }}</div> }
+
+<section class="panel form-panel">
+  <h2>Add patient</h2>
+  <div class="form-grid patient-form">
+    <label>First name <input [(ngModel)]="patientForm.firstName" /></label>
+    <label>Last name <input [(ngModel)]="patientForm.lastName" /></label>
+    <label>Date of birth <input type="date" [(ngModel)]="patientForm.dateOfBirth" /></label>
+    <label>Sex
+      <select [(ngModel)]="patientForm.sex">
+        @for (sex of sexes; track sex) { <option [value]="sex">{{ sex }}</option> }
+      </select>
+    </label>
+    <label>Scenario
+      <select [(ngModel)]="patientForm.scenario">
+        @for (scenario of scenarios; track scenario) { <option [value]="scenario">{{ scenario }}</option> }
+      </select>
+    </label>
+    <button class="button" (click)="addPatient()">Add</button>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>Patients</h2>
+  @if (loading()) {
+    <div class="state">Loading patients...</div>
+  } @else if (patients().length === 0) {
+    <div class="empty">No patients yet.</div>
+  } @else {
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Name</th><th>DOB</th><th>Sex</th><th>Scenario</th><th>Vitals</th><th></th></tr>
+        </thead>
+        <tbody>
+          @for (patient of patients(); track patient.id) {
+            <tr>
+              <td><a [routerLink]="['/patients', patient.id]">{{ patient.firstName }} {{ patient.lastName }}</a></td>
+              <td>{{ patient.dateOfBirth }}</td>
+              <td>{{ patient.sex }}</td>
+              <td>{{ patient.scenario }}</td>
+              <td>{{ patient.vitalsSubmissionCount }}</td>
+              <td class="actions"><button class="danger" (click)="remove(patient)">Delete</button></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>

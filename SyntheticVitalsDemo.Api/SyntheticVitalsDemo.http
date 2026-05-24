@@ -1,0 +1,6 @@
+@SyntheticVitalsDemo_HostAddress = http://localhost:5042
+
+GET {{SyntheticVitalsDemo_HostAddress}}/api/clinics
+Accept: application/json
+
+###

@@ -1,0 +1,39 @@
+services:
+  syntheticvitalsdemo:
+    image: ${DOCKER_REGISTRY-}syntheticvitalsdemo
+    build:
+      context: .
+      dockerfile: SyntheticVitalsDemo.Api/Dockerfile
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__DefaultConnection: Server=mysql;Port=3306;Database=synthetic_vitals_demo;User=synthetic;Password=synthetic;
+    networks:
+      - synthetic-vitals
+  mysql:
+    image: mysql:8.4
+    container_name: synthetic-vitals-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: synthetic_vitals_demo
+      MYSQL_USER: synthetic
+      MYSQL_PASSWORD: synthetic
+      MYSQL_ROOT_PASSWORD: synthetic-root
+    ports:
+      - "3306:3306"
+    volumes:
+      - synthetic-vitals-mysql:/var/lib/mysql
+    networks:
+      - synthetic-vitals
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-usynthetic", "-psynthetic"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  synthetic-vitals-mysql:
+
+networks:
+  synthetic-vitals:

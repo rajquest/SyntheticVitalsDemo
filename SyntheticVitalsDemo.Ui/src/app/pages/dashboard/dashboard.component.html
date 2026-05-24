@@ -1,0 +1,58 @@
+<section class="page-header">
+  <div>
+    <h1>Dashboard</h1>
+    <p>Demo vitals overview across synthetic clinics and patients.</p>
+  </div>
+  <a class="button" routerLink="/clinics">Manage Clinics</a>
+</section>
+
+@if (loading()) {
+  <div class="state">Loading dashboard...</div>
+} @else if (error()) {
+  <div class="state error">{{ error() }}</div>
+} @else if (summary(); as vm) {
+  <section class="metric-grid">
+    <article class="metric"><span>Total clinics</span><strong>{{ vm.totalClinics }}</strong></article>
+    <article class="metric"><span>Total patients</span><strong>{{ vm.totalPatients }}</strong></article>
+    <article class="metric"><span>Vitals submissions</span><strong>{{ vm.totalVitalsSubmissions }}</strong></article>
+    <article class="metric warning"><span>Abnormal vitals</span><strong>{{ vm.abnormalVitalsCount }}</strong></article>
+  </section>
+
+  <section class="panel">
+    <h2>Recent vitals submissions</h2>
+    @if (vm.recentVitalsSubmissions.length === 0) {
+      <div class="empty">No vitals generated yet.</div>
+    } @else {
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Patient</th>
+              <th>Clinic</th>
+              <th>Scenario</th>
+              <th>BP</th>
+              <th>SpO2</th>
+              <th>HR</th>
+              <th>PA mean</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of vm.recentVitalsSubmissions; track row.id) {
+              <tr>
+                <td>{{ row.submittedAtUtc | date:'short' }}</td>
+                <td><a [routerLink]="['/patients', row.patientId]">{{ row.patientName }}</a></td>
+                <td>{{ row.clinicName }}</td>
+                <td>{{ row.scenario }}</td>
+                <td>{{ row.systolicBp }}/{{ row.diastolicBp }}</td>
+                <td>{{ row.spo2 }}%</td>
+                <td>{{ row.heartRate }}</td>
+                <td>{{ row.paMean }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+}

@@ -1,0 +1,31 @@
+@if (vitals.length === 0) {
+  <div class="empty">Generate vitals to see charts.</div>
+} @else {
+  <div class="chart-grid">
+    <div class="chart-box">
+      <canvas baseChart type="line"
+        [data]="chartData('bp')"
+        [options]="options('Blood pressure')"></canvas>
+    </div>
+    <div class="chart-box">
+      <canvas baseChart type="line"
+        [data]="chartData('spo2')"
+        [options]="options('SpO2')"></canvas>
+    </div>
+    <div class="chart-box">
+      <canvas baseChart type="line"
+        [data]="chartData('hr')"
+        [options]="options('Heart rate')"></canvas>
+    </div>
+    <div class="chart-box">
+      <canvas baseChart type="line"
+        [data]="chartData('weight')"
+        [options]="options('Weight')"></canvas>
+    </div>
+    <div class="chart-box wide">
+      <canvas baseChart type="line"
+        [data]="chartData('pa')"
+        [options]="options('PA pressure')"></canvas>
+    </div>
+  </div>
+}
