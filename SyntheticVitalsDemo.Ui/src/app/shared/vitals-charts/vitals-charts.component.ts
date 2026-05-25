@@ -15,16 +15,16 @@ export class VitalsChartsComponent {
   chartData(kind: 'bp' | 'spo2' | 'hr' | 'weight' | 'pa'): ChartConfiguration<'line'>['data'] {
     const series = {
       bp: [
-        { label: 'Systolic', data: this.vitals.map(v => v.systolicBp), borderColor: '#1f6feb' },
-        { label: 'Diastolic', data: this.vitals.map(v => v.diastolicBp), borderColor: '#0f766e' }
+        { label: 'Systolic', data: this.vitals.map(v => v.systolicBp), borderColor: '#000000' },
+        { label: 'Diastolic', data: this.vitals.map(v => v.diastolicBp), borderColor: '#898D8D', borderDash: [6, 4] }
       ],
-      spo2: [{ label: 'SpO2', data: this.vitals.map(v => v.spo2), borderColor: '#0f766e' }],
-      hr: [{ label: 'Heart rate', data: this.vitals.map(v => v.heartRate), borderColor: '#be123c' }],
-      weight: [{ label: 'Weight', data: this.vitals.map(v => v.weightLbs), borderColor: '#7c3aed' }],
+      spo2: [{ label: 'SpO2', data: this.vitals.map(v => v.spo2), borderColor: '#000000' }],
+      hr: [{ label: 'Heart rate', data: this.vitals.map(v => v.heartRate), borderColor: '#333333' }],
+      weight: [{ label: 'Weight', data: this.vitals.map(v => v.weightLbs), borderColor: '#898D8D' }],
       pa: [
-        { label: 'PA systolic', data: this.vitals.map(v => v.paSystolic), borderColor: '#c2410c' },
-        { label: 'PA diastolic', data: this.vitals.map(v => v.paDiastolic), borderColor: '#0891b2' },
-        { label: 'PA mean', data: this.vitals.map(v => v.paMean), borderColor: '#4d7c0f' }
+        { label: 'PA systolic', data: this.vitals.map(v => v.paSystolic), borderColor: '#000000' },
+        { label: 'PA diastolic', data: this.vitals.map(v => v.paDiastolic), borderColor: '#898D8D', borderDash: [6, 4] },
+        { label: 'PA mean', data: this.vitals.map(v => v.paMean), borderColor: '#333333', borderDash: [2, 4] }
       ]
     }[kind];
 

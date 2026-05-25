@@ -1,54 +1,45 @@
 using Microsoft.EntityFrameworkCore;
 using SyntheticVitalsDemo.Api.Models;
-using SyntheticVitalsDemo.Api.Services;
 
 namespace SyntheticVitalsDemo.Api.Data;
 
-public sealed class DbSeeder(AppDbContext db, IVitalsGenerationService generator)
+public sealed class DbSeeder(AppDbContext db)
 {
-    private static readonly string[] ClinicNames = ["North Demo Clinic", "Central Synthetic Care", "Lakeside Training Health"];
-    private static readonly string[] Locations = ["Chicago, IL", "Madison, WI", "Grand Rapids, MI"];
-    private static readonly PatientScenario[] ScenarioMix = Enum.GetValues<PatientScenario>();
+    private static readonly string[] FallbackClinicNames = ["North Demo Clinic", "Central Synthetic Care", "Lakeside Training Health"];
 
     public async Task SeedAsync()
     {
-        await db.Database.EnsureCreatedAsync();
+        await db.Database.MigrateAsync();
         if (await db.Clinics.AnyAsync()) return;
 
-        for (var clinicIndex = 0; clinicIndex < 3; clinicIndex++)
+        var clinicNames = await LoadClinicNamesAsync();
+
+        for (var clinicIndex = 0; clinicIndex < clinicNames.Length; clinicIndex++)
         {
             var clinic = new Clinic
             {
-                Name = ClinicNames[clinicIndex],
-                Location = Locations[clinicIndex]
+                Name = clinicNames[clinicIndex]
             };
-
-            for (var patientIndex = 0; patientIndex < 10; patientIndex++)
-            {
-                var scenario = ScenarioMix[(clinicIndex * 10 + patientIndex) % ScenarioMix.Length];
-                var patient = new Patient
-                {
-                    FirstName = $"Demo{clinicIndex + 1}{patientIndex + 1}",
-                    LastName = "Patient",
-                    DateOfBirth = DateOnly.FromDateTime(DateTime.UtcNow.AddYears(-40 - patientIndex).AddDays(-clinicIndex * 23)),
-                    Sex = patientIndex % 3 == 0 ? Sex.Female : patientIndex % 3 == 1 ? Sex.Male : Sex.Other,
-                    Scenario = scenario
-                };
-
-                if (patientIndex < 6)
-                {
-                    foreach (var vitals in generator.GenerateSeries(patient, 30, DateTime.UtcNow.Date.AddHours(8)))
-                    {
-                        patient.VitalsSubmissions.Add(vitals);
-                    }
-                }
-
-                clinic.Patients.Add(patient);
-            }
 
             db.Clinics.Add(clinic);
         }
 
         await db.SaveChangesAsync();
+    }
+
+    private static async Task<string[]> LoadClinicNamesAsync()
+    {
+        var path = Path.Combine(AppContext.BaseDirectory, "SampleData", "clinics.csv");
+        if (!File.Exists(path)) return FallbackClinicNames;
+
+        var lines = await File.ReadAllLinesAsync(path);
+        var names = lines
+            .Skip(1)
+            .Select(x => x.Trim())
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        return names.Length > 0 ? names : FallbackClinicNames;
     }
 }

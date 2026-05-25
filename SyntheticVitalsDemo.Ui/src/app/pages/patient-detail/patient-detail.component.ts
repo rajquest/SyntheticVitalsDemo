@@ -3,7 +3,7 @@ import { Component, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ApiService } from '../../core/api.service';
-import { Patient, VitalsSubmission } from '../../core/models';
+import { Patient, pulmonaryPressureTrendScenarios, VitalsSubmission } from '../../core/models';
 import { VitalsChartsComponent } from '../../shared/vitals-charts/vitals-charts.component';
 
 @Component({
@@ -16,7 +16,9 @@ export class PatientDetailComponent implements OnInit {
   vitals = signal<VitalsSubmission[]>([]);
   loading = signal(true);
   error = signal<string | null>(null);
-  selectedDays: 1 | 7 | 30 | 90 = 30;
+  selectedDays: 7 | 14 | 30 = 14;
+  pulmonaryPressureTrendScenarios = pulmonaryPressureTrendScenarios;
+  selectedPulmonaryPressureScenario = 'NormalStable';
   replaceExisting = true;
 
   private patientId = '';
@@ -46,17 +48,11 @@ export class PatientDetailComponent implements OnInit {
     });
   }
 
-  generateOne(): void {
-    this.api.generateVitals(this.patientId).subscribe({
-      next: () => this.load(),
-      error: () => this.error.set('Unable to generate vitals.')
-    });
-  }
-
   generateSeries(): void {
     this.api.generateVitalsSeries(this.patientId, {
       days: this.selectedDays,
-      replaceExisting: this.replaceExisting
+      replaceExisting: this.replaceExisting,
+      pulmonaryPressureScenario: this.selectedPulmonaryPressureScenario
     }).subscribe({
       next: () => this.load(),
       error: () => this.error.set('Unable to generate vitals series.')

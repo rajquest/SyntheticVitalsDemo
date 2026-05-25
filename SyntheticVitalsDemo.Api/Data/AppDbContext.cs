@@ -14,7 +14,6 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         modelBuilder.Entity<Clinic>(entity =>
         {
             entity.Property(x => x.Name).HasMaxLength(160).IsRequired();
-            entity.Property(x => x.Location).HasMaxLength(160);
             entity.HasMany(x => x.Patients).WithOne(x => x.Clinic).HasForeignKey(x => x.ClinicId).OnDelete(DeleteBehavior.Cascade);
         });
 
@@ -24,6 +23,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.Property(x => x.LastName).HasMaxLength(80).IsRequired();
             entity.Property(x => x.Sex).HasConversion<string>().HasMaxLength(24).IsRequired();
             entity.Property(x => x.Scenario).HasConversion<string>().HasMaxLength(48).IsRequired();
+            entity.Property(x => x.WeightLbs).HasPrecision(6, 1);
             entity.HasMany(x => x.VitalsSubmissions).WithOne(x => x.Patient).HasForeignKey(x => x.PatientId).OnDelete(DeleteBehavior.Cascade);
         });
 
@@ -31,6 +31,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         {
             entity.Property(x => x.WeightLbs).HasPrecision(6, 1);
             entity.Property(x => x.Scenario).HasConversion<string>().HasMaxLength(48).IsRequired();
+            entity.Property(x => x.TrendScenario).HasConversion<string>().HasMaxLength(64).IsRequired();
             entity.Property(x => x.Notes).HasMaxLength(400);
             entity.HasIndex(x => new { x.PatientId, x.SubmittedAtUtc });
         });

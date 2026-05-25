@@ -21,4 +21,5 @@ public sealed record RecentVitalsSubmissionResponse(
     int PaSystolic,
     int PaDiastolic,
     int PaMean,
+    string PulmonaryPressureDisplay,
     string Scenario);

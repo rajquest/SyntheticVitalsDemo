@@ -3,7 +3,7 @@
     @if (patient(); as p) {
       <a [routerLink]="['/clinics', p.clinicId]" class="back-link">Clinic</a>
       <h1>{{ p.firstName }} {{ p.lastName }}</h1>
-      <p>{{ p.sex }} | DOB {{ p.dateOfBirth }} | {{ p.scenario }}</p>
+      <p>{{ p.sex }} | DOB {{ p.dateOfBirth }} | {{ p.scenario }} | PA {{ p.pulmonaryPressureDisplay }}</p>
     } @else {
       <h1>Patient</h1>
     }
@@ -12,13 +12,28 @@
 
 @if (error()) { <div class="state error">{{ error() }}</div> }
 
+@if (patient(); as p) {
+  <section class="metric-grid">
+    <article class="metric"><span>BP</span><strong>{{ p.bloodPressureDisplay }}</strong></article>
+    <article class="metric"><span>SpO2 / HR</span><strong>{{ p.spo2 }}% / {{ p.heartRate }}</strong></article>
+    <article class="metric"><span>Weight</span><strong>{{ p.weightLbs }}</strong></article>
+    <article class="metric warning"><span>PA Pressure</span><strong>{{ p.pulmonaryPressureDisplay }}</strong></article>
+  </section>
+}
+
 <section class="panel controls">
-  <button class="button" (click)="generateOne()">Generate One Submission</button>
+  <label>Pulmonary Artery Pressure Trend
+    <select [(ngModel)]="selectedPulmonaryPressureScenario">
+      @for (scenario of pulmonaryPressureTrendScenarios; track scenario.value) {
+        <option [value]="scenario.value">{{ scenario.label }}</option>
+      }
+    </select>
+  </label>
   <label>Series
     <select [(ngModel)]="selectedDays">
       <option [ngValue]="7">7 days</option>
+      <option [ngValue]="14">14 days</option>
       <option [ngValue]="30">30 days</option>
-      <option [ngValue]="90">90 days</option>
     </select>
   </label>
   <label class="checkbox"><input type="checkbox" [(ngModel)]="replaceExisting" /> Replace existing</label>
@@ -47,9 +62,9 @@
             <th>SpO2</th>
             <th>HR</th>
             <th>Weight</th>
-            <th>PA systolic</th>
-            <th>PA diastolic</th>
-            <th>PA mean</th>
+            <th>PA Pressure</th>
+            <th>PA Mean</th>
+            <th>Trend Scenario</th>
             <th>Notes</th>
           </tr>
         </thead>
@@ -61,9 +76,9 @@
               <td>{{ row.spo2 }}%</td>
               <td>{{ row.heartRate }}</td>
               <td>{{ row.weightLbs }}</td>
-              <td>{{ row.paSystolic }}</td>
-              <td>{{ row.paDiastolic }}</td>
+              <td>{{ row.pulmonaryPressureDisplay }}</td>
               <td>{{ row.paMean }}</td>
+              <td>{{ row.trendScenario }}</td>
               <td>{{ row.notes }}</td>
             </tr>
           }

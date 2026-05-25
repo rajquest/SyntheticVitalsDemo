@@ -1,8 +1,10 @@
 using Microsoft.EntityFrameworkCore;
+using SyntheticVitalsDemo.Api.Configuration;
 using SyntheticVitalsDemo.Api.Data;
 using SyntheticVitalsDemo.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Configuration.AddInMemoryCollection(ConfigurationValues.LoadLocalEnv());
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -11,17 +13,21 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("LocalUi", policy =>
-        policy.WithOrigins("http://localhost:4200", "https://localhost:4200")
+        policy.WithOrigins(
+                "http://localhost:4200",
+                "https://localhost:4200",
+                "http://127.0.0.1:4200",
+                "https://127.0.0.1:4200")
             .AllowAnyHeader()
             .AllowAnyMethod());
 });
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? "Server=localhost;Port=3306;Database=synthetic_vitals_demo;User=synthetic;Password=synthetic;";
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+    
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(
         connectionString,
-        ServerVersion.Parse("8.0.36-mysql"),
+        ServerVersion.Parse("8.0.46-mysql"),
         mySqlOptions => mySqlOptions.EnableRetryOnFailure()));
 
 builder.Services.AddScoped<ClinicService>();
@@ -29,8 +35,12 @@ builder.Services.AddScoped<PatientService>();
 builder.Services.AddScoped<VitalsService>();
 builder.Services.AddScoped<DashboardService>();
 builder.Services.AddScoped<CsvExportService>();
+builder.Services.AddScoped<DemoDataResetService>();
 builder.Services.AddScoped<DbSeeder>();
 builder.Services.AddScoped<IVitalsGenerationService, VitalsGenerationService>();
+builder.Services.AddScoped<PulmonaryPressureGeneratorService>();
+builder.Services.AddScoped<PulmonaryPressureTrendGeneratorService>();
+builder.Services.AddScoped<SyntheticPatientGeneratorService>();
 
 var app = builder.Build();
 

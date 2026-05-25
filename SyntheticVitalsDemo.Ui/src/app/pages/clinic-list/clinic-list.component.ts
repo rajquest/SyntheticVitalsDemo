@@ -1,25 +1,61 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { Component, OnInit, ViewChild, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
+import { MatSort, MatSortModule } from '@angular/material/sort';
+import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { ApiService } from '../../core/api.service';
 import { Clinic } from '../../core/models';
 
 @Component({
   selector: 'app-clinic-list',
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [
+    CommonModule,
+    RouterLink,
+    MatFormFieldModule,
+    MatIconModule,
+    MatInputModule,
+    MatPaginatorModule,
+    MatSortModule,
+    MatTableModule
+  ],
   templateUrl: './clinic-list.component.html'
 })
 export class ClinicListComponent implements OnInit {
   clinics = signal<Clinic[]>([]);
   loading = signal(true);
   error = signal<string | null>(null);
-  form = { name: '', location: '' };
-  editingId = signal<string | null>(null);
+  displayedColumns = ['name', 'patientCount', 'submissionCount', 'createdAtUtc'];
+  dataSource = new MatTableDataSource<Clinic>([]);
+
+  @ViewChild(MatPaginator) set paginator(value: MatPaginator | undefined) {
+    if (value) {
+      this.dataSource.paginator = value;
+    }
+  }
+
+  @ViewChild(MatSort) set sort(value: MatSort | undefined) {
+    if (value) {
+      this.dataSource.sort = value;
+    }
+  }
 
   constructor(private readonly api: ApiService) {}
 
   ngOnInit(): void {
+    this.dataSource.filterPredicate = (clinic, filter) => {
+      const normalized = [
+        clinic.name,
+        clinic.patientCount.toString(),
+        clinic.submissionCount.toString(),
+        new Date(clinic.createdAtUtc).toLocaleDateString()
+      ].join(' ').toLowerCase();
+
+      return normalized.includes(filter);
+    };
     this.load();
   }
 
@@ -28,6 +64,7 @@ export class ClinicListComponent implements OnInit {
     this.api.getClinics().subscribe({
       next: clinics => {
         this.clinics.set(clinics);
+        this.dataSource.data = clinics;
         this.loading.set(false);
       },
       error: () => {
@@ -37,36 +74,8 @@ export class ClinicListComponent implements OnInit {
     });
   }
 
-  save(): void {
-    if (!this.form.name.trim()) {
-      this.error.set('Clinic name is required.');
-      return;
-    }
-
-    const request = { name: this.form.name.trim(), location: this.form.location.trim() || null };
-    const editingId = this.editingId();
-    const save = editingId ? this.api.updateClinic(editingId, request) : this.api.createClinic(request);
-    save.subscribe({
-      next: () => {
-        this.form = { name: '', location: '' };
-        this.editingId.set(null);
-        this.error.set(null);
-        this.load();
-      },
-      error: () => this.error.set('Unable to save clinic.')
-    });
-  }
-
-  edit(clinic: Clinic): void {
-    this.editingId.set(clinic.id);
-    this.form = { name: clinic.name, location: clinic.location ?? '' };
-  }
-
-  remove(clinic: Clinic): void {
-    if (!confirm(`Delete ${clinic.name}?`)) return;
-    this.api.deleteClinic(clinic.id).subscribe({
-      next: () => this.load(),
-      error: () => this.error.set('Unable to delete clinic.')
-    });
+  applyFilter(value: string): void {
+    this.dataSource.filter = value.trim().toLowerCase();
+    this.dataSource.paginator?.firstPage();
   }
 }

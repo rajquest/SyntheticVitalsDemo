@@ -8,8 +8,24 @@ namespace SyntheticVitalsDemo.Api.Services;
 public sealed class ClinicService(AppDbContext db)
 {
     public async Task<IReadOnlyList<ClinicResponse>> GetAllAsync() =>
-        await db.Clinics.Include(x => x.Patients).OrderBy(x => x.Name).Select(x =>
-            new ClinicResponse(x.Id, x.Name, x.Location, x.CreatedAtUtc, x.Patients.Count)).ToArrayAsync();
+        await db.Clinics
+            .Select(x => new
+            {
+                x.Id,
+                x.Name,
+                x.CreatedAtUtc,
+                PatientCount = x.Patients.Count,
+                SubmissionCount = x.Patients.SelectMany(patient => patient.VitalsSubmissions).Count()
+            })
+            .OrderByDescending(x => x.PatientCount)
+            .ThenBy(x => x.Name)
+            .Select(x => new ClinicResponse(
+                x.Id,
+                x.Name,
+                x.CreatedAtUtc,
+                x.PatientCount,
+                x.SubmissionCount))
+            .ToArrayAsync();
 
     public async Task<ClinicResponse?> GetAsync(Guid id)
     {
@@ -19,7 +35,7 @@ public sealed class ClinicService(AppDbContext db)
 
     public async Task<ClinicResponse> CreateAsync(CreateClinicRequest request)
     {
-        var clinic = new Clinic { Name = request.Name.Trim(), Location = string.IsNullOrWhiteSpace(request.Location) ? null : request.Location.Trim() };
+        var clinic = new Clinic { Name = request.Name.Trim() };
         db.Clinics.Add(clinic);
         await db.SaveChangesAsync();
         return clinic.ToResponse();
@@ -31,7 +47,6 @@ public sealed class ClinicService(AppDbContext db)
         if (clinic is null) return null;
 
         clinic.Name = request.Name.Trim();
-        clinic.Location = string.IsNullOrWhiteSpace(request.Location) ? null : request.Location.Trim();
         await db.SaveChangesAsync();
         return clinic.ToResponse();
     }

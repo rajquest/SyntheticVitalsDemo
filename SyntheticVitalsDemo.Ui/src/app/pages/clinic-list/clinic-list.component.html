@@ -1,45 +1,53 @@
 <section class="page-header">
   <div>
     <h1>Clinics</h1>
-    <p>Create demo clinics and open clinic details.</p>
+    <p>Search clinics loaded from the sample dataset.</p>
   </div>
-</section>
-
-<section class="panel form-panel">
-  <h2>{{ editingId() ? 'Edit clinic' : 'Add clinic' }}</h2>
-  <div class="form-grid">
-    <label>Name <input [(ngModel)]="form.name" /></label>
-    <label>Location <input [(ngModel)]="form.location" /></label>
-    <button class="button" (click)="save()">{{ editingId() ? 'Update' : 'Add' }}</button>
-  </div>
-  @if (error()) { <div class="inline-error">{{ error() }}</div> }
 </section>
 
 <section class="panel">
+  <mat-form-field appearance="outline" class="search-field">
+    <mat-label>Search clinics</mat-label>
+    <mat-icon matPrefix>search</mat-icon>
+    <input matInput #clinicSearch (input)="applyFilter(clinicSearch.value)" />
+  </mat-form-field>
+
   @if (loading()) {
     <div class="state">Loading clinics...</div>
   } @else if (clinics().length === 0) {
     <div class="empty">No clinics yet.</div>
   } @else {
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr><th>Name</th><th>Location</th><th>Patients</th><th></th></tr>
-        </thead>
-        <tbody>
-          @for (clinic of clinics(); track clinic.id) {
-            <tr>
-              <td><a [routerLink]="['/clinics', clinic.id]">{{ clinic.name }}</a></td>
-              <td>{{ clinic.location || 'Not set' }}</td>
-              <td>{{ clinic.patientCount }}</td>
-              <td class="actions">
-                <button (click)="edit(clinic)">Edit</button>
-                <button class="danger" (click)="remove(clinic)">Delete</button>
-              </td>
-            </tr>
-          }
-        </tbody>
+    <div class="mat-elevation-z1 clinic-grid">
+      <table mat-table [dataSource]="dataSource" matSort>
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Name</th>
+          <td mat-cell *matCellDef="let clinic">
+            <a [routerLink]="['/clinics', clinic.id]">{{ clinic.name }}</a>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="patientCount">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Patients</th>
+          <td mat-cell *matCellDef="let clinic">{{ clinic.patientCount }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="submissionCount">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Submissions</th>
+          <td mat-cell *matCellDef="let clinic">{{ clinic.submissionCount }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="createdAtUtc">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Created</th>
+          <td mat-cell *matCellDef="let clinic">{{ clinic.createdAtUtc | date: 'mediumDate' }}</td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+        <tr class="mat-row" *matNoDataRow>
+          <td class="mat-cell empty" [attr.colspan]="displayedColumns.length">No matching clinics.</td>
+        </tr>
       </table>
+      <mat-paginator [pageSize]="10" [pageSizeOptions]="[10, 25, 50, 100, 500]" showFirstLastButtons></mat-paginator>
     </div>
   }
 </section>

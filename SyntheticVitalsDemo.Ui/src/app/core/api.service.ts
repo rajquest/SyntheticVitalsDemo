@@ -2,16 +2,18 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import {
   Clinic,
-  CreateClinicRequest,
   CreatePatientRequest,
   DashboardSummary,
+  GeneratePatientsRequest,
+  GeneratePatientsResponse,
   GenerateVitalsRequest,
   GenerateVitalsSeriesRequest,
   Patient,
+  ResetPatientDataResponse,
   VitalsSubmission
 } from './models';
 
-const apiBaseUrl = 'http://localhost:5217/api';
+const apiBaseUrl = 'http://localhost:5000/api';
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
@@ -29,18 +31,6 @@ export class ApiService {
     return this.http.get<Clinic>(`${apiBaseUrl}/clinics/${id}`);
   }
 
-  createClinic(request: CreateClinicRequest) {
-    return this.http.post<Clinic>(`${apiBaseUrl}/clinics`, request);
-  }
-
-  updateClinic(id: string, request: CreateClinicRequest) {
-    return this.http.put<Clinic>(`${apiBaseUrl}/clinics/${id}`, request);
-  }
-
-  deleteClinic(id: string) {
-    return this.http.delete<void>(`${apiBaseUrl}/clinics/${id}`);
-  }
-
   getPatients(clinicId: string) {
     return this.http.get<Patient[]>(`${apiBaseUrl}/clinics/${clinicId}/patients`);
   }
@@ -53,8 +43,8 @@ export class ApiService {
     return this.http.post<Patient>(`${apiBaseUrl}/clinics/${clinicId}/patients`, request);
   }
 
-  generatePatients(clinicId: string, count: number) {
-    return this.http.post<Patient[]>(`${apiBaseUrl}/clinics/${clinicId}/generate-patients`, { count });
+  generatePatients(clinicId: string, request: GeneratePatientsRequest) {
+    return this.http.post<GeneratePatientsResponse>(`${apiBaseUrl}/clinics/${clinicId}/patients/generate`, request);
   }
 
   updatePatient(id: string, request: CreatePatientRequest) {
@@ -79,5 +69,9 @@ export class ApiService {
 
   deleteVitals(patientId: string) {
     return this.http.delete<void>(`${apiBaseUrl}/patients/${patientId}/vitals`);
+  }
+
+  resetPatientData() {
+    return this.http.delete<ResetPatientDataResponse>(`${apiBaseUrl}/admin/patient-data`);
   }
 }

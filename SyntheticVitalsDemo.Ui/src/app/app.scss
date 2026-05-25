@@ -4,17 +4,30 @@
 
 .topbar {
   align-items: center;
-  background: #fff;
-  border-bottom: 1px solid #e1e6ef;
+  background: #3f3f46;
+  border-bottom: 1px solid #3f3f46;
   display: flex;
   justify-content: space-between;
   padding: 14px 28px;
 }
 
 .brand {
-  color: #172033;
+  align-items: center;
+  color: var(--color-text-inverse);
+  display: inline-flex;
   font-size: 1.1rem;
   font-weight: 800;
+  gap: 8px;
+}
+
+.brand:hover {
+  text-decoration: none;
+}
+
+.brand mat-icon {
+  font-size: 24px;
+  height: 24px;
+  width: 24px;
 }
 
 nav {
@@ -24,22 +37,29 @@ nav {
 
 nav a {
   border-radius: 6px;
-  color: #4b5565;
+  color: var(--color-text-inverse);
   font-weight: 700;
   padding: 8px 10px;
 }
 
+nav a:hover {
+  background: color-mix(in srgb, var(--color-text-inverse) 12%, transparent);
+  color: var(--color-text-inverse);
+  text-decoration: none;
+}
+
 nav a.active {
-  background: #eaf2ff;
-  color: #1f6feb;
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
 }
 
 .demo-banner {
-  background: #fff7ed;
-  border-bottom: 1px solid #fed7aa;
-  color: #9a3412;
-  font-weight: 800;
-  padding: 10px 28px;
+  background: var(--color-primary);
+  border-bottom: 1px solid var(--color-primary-dark);
+  color: var(--color-text-inverse);
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 6px 28px;
 }
 
 main {

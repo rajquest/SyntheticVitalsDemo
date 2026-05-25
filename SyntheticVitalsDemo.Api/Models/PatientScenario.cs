@@ -10,5 +10,12 @@ public enum PatientScenario
     HeartFailureImproving,
     LowSpo2Episode,
     WeightGainTrend,
-    ElevatedPaPressure
+    ElevatedPaPressure,
+    NormalPaPressure,
+    MildPulmonaryHypertension,
+    ModeratePulmonaryHypertension,
+    SeverePulmonaryHypertension,
+    ElevatedPaDiastolicPressure,
+    HighPaMeanPressure,
+    MixedPulmonaryPressureVariability
 }

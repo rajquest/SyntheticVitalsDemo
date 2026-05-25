@@ -2,7 +2,7 @@ using SyntheticVitalsDemo.Api.Models;
 
 namespace SyntheticVitalsDemo.Api.Services;
 
-public sealed class VitalsGenerationService : IVitalsGenerationService
+public sealed class VitalsGenerationService(PulmonaryPressureTrendGeneratorService pressureTrendGenerator) : IVitalsGenerationService
 {
     private readonly Random _random = new(1729);
 
@@ -11,14 +11,37 @@ public sealed class VitalsGenerationService : IVitalsGenerationService
 
     public IReadOnlyList<VitalsSubmission> GenerateSeries(Patient patient, int days, DateTime endDateUtc)
     {
-        if (days is not (1 or 7 or 30 or 90))
+        if (days is not (1 or 7 or 14 or 30 or 90))
         {
-            throw new ArgumentOutOfRangeException(nameof(days), "Days must be 1, 7, 30, or 90.");
+            throw new ArgumentOutOfRangeException(nameof(days), "Days must be 1, 7, 14, 30, or 90.");
         }
 
         var start = endDateUtc.Date.AddDays(-(days - 1)).AddHours(8);
         return Enumerable.Range(0, days)
             .Select(i => Generate(patient, start.AddDays(i), i, days))
+            .ToArray();
+    }
+
+    public IReadOnlyList<VitalsSubmission> GenerateSeries(
+        Patient patient,
+        int days,
+        DateTime endDateUtc,
+        PulmonaryPressureTrendScenario trendScenario)
+    {
+        days = Math.Clamp(days, 7, 30);
+        var pressureReadings = pressureTrendGenerator.Generate(trendScenario, days, endDateUtc);
+
+        return pressureReadings
+            .Select((pressure, index) =>
+            {
+                var vitals = Generate(patient, pressure.ReadingDateUtc, index, pressureReadings.Count);
+                vitals.PaSystolic = pressure.PaSystolic;
+                vitals.PaDiastolic = pressure.PaDiastolic;
+                vitals.PaMean = pressure.PaMean;
+                vitals.TrendScenario = trendScenario;
+                vitals.Notes = $"Synthetic PA pressure trend: {trendScenario}.";
+                return vitals;
+            })
             .ToArray();
     }
 
@@ -95,6 +118,7 @@ public sealed class VitalsGenerationService : IVitalsGenerationService
             PaDiastolic = paDiastolic,
             PaMean = CalculatePaMean(paSystolic, paDiastolic),
             Scenario = patient.Scenario,
+            TrendScenario = PulmonaryPressureTrendScenario.NormalStable,
             Notes = patient.Scenario == PatientScenario.LowSpo2Episode && lowSpo2Episode
                 ? "Synthetic low SpO2 episode for demo purposes."
                 : "Synthetic demo vitals."

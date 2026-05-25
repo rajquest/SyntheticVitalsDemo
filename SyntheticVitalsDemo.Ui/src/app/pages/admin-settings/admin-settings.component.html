@@ -1,0 +1,37 @@
+<section class="page-header">
+  <div>
+    <h1>Admin Settings</h1>
+    <p>Reset demo patient data while keeping the clinic sample dataset intact.</p>
+  </div>
+  <a class="button secondary" routerLink="/dashboard">Back to Dashboard</a>
+</section>
+
+<section class="panel danger-zone">
+  <div class="danger-zone__header">
+    <mat-icon aria-hidden="true">delete_forever</mat-icon>
+    <div>
+      <h2>Reset Patient Data</h2>
+      <p>This deletes all patients and vitals submissions. Clinic records are not deleted.</p>
+    </div>
+  </div>
+
+  <label class="confirm-check">
+    <input type="checkbox" [(ngModel)]="confirmReset" [disabled]="resetting()" />
+    <span>I understand this will delete all generated patients and vitals submissions.</span>
+  </label>
+
+  <button class="danger-action" type="button" (click)="resetPatientData()" [disabled]="!confirmReset || resetting()">
+    <mat-icon aria-hidden="true">delete</mat-icon>
+    <span>{{ resetting() ? 'Resetting...' : 'Reset Patient Data' }}</span>
+  </button>
+
+  @if (result(); as reset) {
+    <div class="state success">
+      Deleted {{ reset.deletedPatients }} patients and {{ reset.deletedVitalsSubmissions }} vitals submissions. Clinics were kept.
+    </div>
+  }
+
+  @if (error(); as message) {
+    <div class="state error">{{ message }}</div>
+  }
+</section>

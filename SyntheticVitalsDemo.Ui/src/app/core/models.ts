@@ -1,9 +1,9 @@
 export interface Clinic {
   id: string;
   name: string;
-  location?: string | null;
   createdAtUtc: string;
   patientCount: number;
+  submissionCount: number;
 }
 
 export interface Patient {
@@ -14,6 +14,16 @@ export interface Patient {
   dateOfBirth: string;
   sex: string;
   scenario: string;
+  systolicBp: number;
+  diastolicBp: number;
+  bloodPressureDisplay: string;
+  spo2: number;
+  heartRate: number;
+  weightLbs: number;
+  paSystolic: number;
+  paDiastolic: number;
+  paMean: number;
+  pulmonaryPressureDisplay: string;
   createdAtUtc: string;
   vitalsSubmissionCount: number;
 }
@@ -30,13 +40,16 @@ export interface VitalsSubmission {
   paSystolic: number;
   paDiastolic: number;
   paMean: number;
+  pulmonaryPressureDisplay: string;
   scenario: string;
+  trendScenario: string;
   notes?: string | null;
 }
 
 export interface RecentVitalsSubmission extends VitalsSubmission {
   patientName: string;
   clinicName: string;
+  pulmonaryPressureDisplay: string;
 }
 
 export interface DashboardSummary {
@@ -45,11 +58,6 @@ export interface DashboardSummary {
   totalVitalsSubmissions: number;
   abnormalVitalsCount: number;
   recentVitalsSubmissions: RecentVitalsSubmission[];
-}
-
-export interface CreateClinicRequest {
-  name: string;
-  location?: string | null;
 }
 
 export interface CreatePatientRequest {
@@ -65,9 +73,29 @@ export interface GenerateVitalsRequest {
 }
 
 export interface GenerateVitalsSeriesRequest {
-  days: 1 | 7 | 30 | 90;
+  days: 7 | 14 | 30;
   endDateUtc?: string | null;
   replaceExisting: boolean;
+  pulmonaryPressureScenario: string;
+}
+
+export interface GeneratePatientsRequest {
+  count: 5 | 10 | 25 | 50 | 100;
+  malePercentage: number;
+  pulmonaryPressureScenario: string;
+  trendDays: number;
+}
+
+export interface GeneratePatientsResponse {
+  clinicId: string;
+  generatedCount: number;
+  updatedPatientCount: number;
+  patients: Patient[];
+}
+
+export interface ResetPatientDataResponse {
+  deletedVitalsSubmissions: number;
+  deletedPatients: number;
 }
 
 export const scenarios = [
@@ -80,6 +108,25 @@ export const scenarios = [
   'LowSpo2Episode',
   'WeightGainTrend',
   'ElevatedPaPressure'
+];
+
+export const pulmonaryPressureScenarios = [
+  { value: 'NormalPaPressure', label: 'Normal PA Pressure' },
+  { value: 'MildPulmonaryHypertension', label: 'Mild Pulmonary Hypertension' },
+  { value: 'ModeratePulmonaryHypertension', label: 'Moderate Pulmonary Hypertension' },
+  { value: 'SeverePulmonaryHypertension', label: 'Severe Pulmonary Hypertension' },
+  { value: 'ElevatedPaDiastolicPressure', label: 'Elevated PA Diastolic Pressure' },
+  { value: 'HighPaMeanPressure', label: 'High PA Mean Pressure' },
+  { value: 'MixedPulmonaryPressureVariability', label: 'Mixed Pulmonary Pressure Variability' }
+];
+
+export const pulmonaryPressureTrendScenarios = [
+  { value: 'NormalStable', label: 'Normal and stable' },
+  { value: 'MildlyElevatedStable', label: 'Mildly elevated but stable' },
+  { value: 'ProgressivelyWorseningPaMean', label: 'Progressively worsening PA mean' },
+  { value: 'SuddenPaPressureSpike', label: 'Sudden PA pressure spike' },
+  { value: 'ImprovingAfterDiureticAdjustment', label: 'Improving after diuretic adjustment' },
+  { value: 'PersistentlyHighPaDiastolic', label: 'Persistently high PA diastolic' }
 ];
 
 export const sexes = ['Female', 'Male', 'Other', 'Unknown'];

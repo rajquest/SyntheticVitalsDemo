@@ -4,7 +4,21 @@ namespace SyntheticVitalsDemo.Api.Services;
 
 public static class Validation
 {
+    public static readonly PatientScenario[] PulmonaryPressureScenarios =
+    [
+        PatientScenario.NormalPaPressure,
+        PatientScenario.MildPulmonaryHypertension,
+        PatientScenario.ModeratePulmonaryHypertension,
+        PatientScenario.SeverePulmonaryHypertension,
+        PatientScenario.ElevatedPaDiastolicPressure,
+        PatientScenario.HighPaMeanPressure,
+        PatientScenario.MixedPulmonaryPressureVariability
+    ];
+
     public static bool TryParseScenario(string value, out PatientScenario scenario) =>
+        Enum.TryParse(value, ignoreCase: true, out scenario) && Enum.IsDefined(scenario);
+
+    public static bool TryParsePulmonaryPressureTrendScenario(string value, out PulmonaryPressureTrendScenario scenario) =>
         Enum.TryParse(value, ignoreCase: true, out scenario) && Enum.IsDefined(scenario);
 
     public static bool TryParseSex(string value, out Sex sex) =>

@@ -12,8 +12,10 @@ public sealed record VitalsSubmissionResponse(
     int PaSystolic,
     int PaDiastolic,
     int PaMean,
+    string PulmonaryPressureDisplay,
     string Scenario,
+    string TrendScenario,
     string? Notes);
 
 public sealed record GenerateVitalsRequest(DateTime? SubmittedAtUtc);
-public sealed record GenerateVitalsSeriesRequest(int Days, DateTime? EndDateUtc, bool ReplaceExisting);
+public sealed record GenerateVitalsSeriesRequest(int Days, DateTime? EndDateUtc, bool ReplaceExisting, string PulmonaryPressureScenario);

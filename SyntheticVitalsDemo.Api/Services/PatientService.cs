@@ -5,11 +5,8 @@ using SyntheticVitalsDemo.Api.Models;
 
 namespace SyntheticVitalsDemo.Api.Services;
 
-public sealed class PatientService(AppDbContext db)
+public sealed class PatientService(AppDbContext db, SyntheticPatientGeneratorService generator, IVitalsGenerationService vitalsGenerator)
 {
-    private static readonly string[] FirstNames = ["Avery", "Jordan", "Morgan", "Taylor", "Riley", "Casey", "Jamie", "Quinn", "Drew", "Reese"];
-    private static readonly string[] LastNames = ["Demo", "Sample", "Training", "Synthetic", "Example", "Mock", "Sandbox", "Practice", "Fiction", "Placeholder"];
-
     public async Task<IReadOnlyList<PatientResponse>?> GetForClinicAsync(Guid clinicId)
     {
         if (!await db.Clinics.AnyAsync(x => x.Id == clinicId)) return null;
@@ -19,7 +16,26 @@ public sealed class PatientService(AppDbContext db)
             .Include(x => x.VitalsSubmissions)
             .OrderBy(x => x.LastName)
             .ThenBy(x => x.FirstName)
-            .Select(x => new PatientResponse(x.Id, x.ClinicId, x.FirstName, x.LastName, x.DateOfBirth, x.Sex.ToString(), x.Scenario.ToString(), x.CreatedAtUtc, x.VitalsSubmissions.Count))
+            .Select(x => new PatientResponse(
+                x.Id,
+                x.ClinicId,
+                x.FirstName,
+                x.LastName,
+                x.DateOfBirth,
+                x.Sex.ToString(),
+                x.Scenario.ToString(),
+                x.SystolicBp,
+                x.DiastolicBp,
+                x.SystolicBp + " / " + x.DiastolicBp,
+                x.Spo2,
+                x.HeartRate,
+                x.WeightLbs,
+                x.PaSystolic,
+                x.PaDiastolic,
+                x.PaMean,
+                x.PaSystolic + " / " + x.PaDiastolic + " (" + x.PaMean + ")",
+                x.CreatedAtUtc,
+                x.VitalsSubmissions.Count))
             .ToArrayAsync();
     }
 
@@ -50,25 +66,53 @@ public sealed class PatientService(AppDbContext db)
         return patient.ToResponse();
     }
 
-    public async Task<IReadOnlyList<PatientResponse>?> GenerateAsync(Guid clinicId, GeneratePatientsRequest request)
+    public async Task<GeneratePatientsResponse?> GenerateAsync(Guid clinicId, GeneratePatientsRequest request)
     {
         if (!await db.Clinics.AnyAsync(x => x.Id == clinicId)) return null;
+        var patientScenario = ResolvePatientScenario(request.Scenario);
+        Validation.TryParsePulmonaryPressureTrendScenario(request.PulmonaryPressureScenario, out var trendScenario);
+        var trendDays = Math.Clamp(request.TrendDays, 7, 30);
 
-        var count = Math.Clamp(request.Count, 1, 100);
-        var scenarios = ParseScenarios(request.Scenarios);
-        var patients = Enumerable.Range(0, count).Select(i => new Patient
-        {
-            ClinicId = clinicId,
-            FirstName = FirstNames[i % FirstNames.Length],
-            LastName = $"{LastNames[i % LastNames.Length]}{i + 1}",
-            DateOfBirth = DateOnly.FromDateTime(DateTime.UtcNow.AddYears(-35 - i % 45).AddDays(-i * 17)),
-            Sex = i % 3 == 0 ? Sex.Female : i % 3 == 1 ? Sex.Male : Sex.Other,
-            Scenario = scenarios[i % scenarios.Length]
-        }).ToArray();
+        var patients = generator.Generate(clinicId, request, patientScenario);
+        var vitalsSubmissions = patients
+            .SelectMany(patient =>
+            {
+                var series = vitalsGenerator.GenerateSeries(patient, trendDays, DateTime.UtcNow, trendScenario);
+                var latest = series[series.Count - 1];
+                patient.SystolicBp = latest.SystolicBp;
+                patient.DiastolicBp = latest.DiastolicBp;
+                patient.Spo2 = latest.Spo2;
+                patient.HeartRate = latest.HeartRate;
+                patient.WeightLbs = latest.WeightLbs;
+                patient.PaSystolic = latest.PaSystolic;
+                patient.PaDiastolic = latest.PaDiastolic;
+                patient.PaMean = latest.PaMean;
+                return series;
+            })
+            .ToArray();
 
         db.Patients.AddRange(patients);
+        db.VitalsSubmissions.AddRange(vitalsSubmissions);
         await db.SaveChangesAsync();
-        return patients.Select(x => x.ToResponse()).ToArray();
+        var updatedPatientCount = await db.Patients.CountAsync(x => x.ClinicId == clinicId);
+
+        return new GeneratePatientsResponse(
+            clinicId,
+            patients.Count,
+            updatedPatientCount,
+            patients.Select(x => x.ToResponse()).ToArray());
+    }
+
+    private static PatientScenario ResolvePatientScenario(string? scenario)
+    {
+        if (!string.IsNullOrWhiteSpace(scenario) &&
+            Validation.TryParseScenario(scenario, out var parsed) &&
+            Validation.PulmonaryPressureScenarios.Contains(parsed))
+        {
+            return parsed;
+        }
+
+        return PatientScenario.ElevatedPaPressure;
     }
 
     public async Task<PatientResponse?> UpdateAsync(Guid id, UpdatePatientRequest request)
@@ -97,18 +141,4 @@ public sealed class PatientService(AppDbContext db)
         return true;
     }
 
-    private static PatientScenario[] ParseScenarios(string[]? values)
-    {
-        var parsed = values?
-            .Where(x => Validation.TryParseScenario(x, out _))
-            .Select(x =>
-            {
-                Validation.TryParseScenario(x, out var scenario);
-                return scenario;
-            })
-            .Distinct()
-            .ToArray();
-
-        return parsed is { Length: > 0 } ? parsed : Enum.GetValues<PatientScenario>();
-    }
 }

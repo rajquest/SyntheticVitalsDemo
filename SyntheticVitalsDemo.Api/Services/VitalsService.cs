@@ -13,7 +13,22 @@ public sealed class VitalsService(AppDbContext db, IVitalsGenerationService gene
         return await db.VitalsSubmissions
             .Where(x => x.PatientId == patientId)
             .OrderBy(x => x.SubmittedAtUtc)
-            .Select(x => new VitalsSubmissionResponse(x.Id, x.PatientId, x.SubmittedAtUtc, x.SystolicBp, x.DiastolicBp, x.Spo2, x.HeartRate, x.WeightLbs, x.PaSystolic, x.PaDiastolic, x.PaMean, x.Scenario.ToString(), x.Notes))
+            .Select(x => new VitalsSubmissionResponse(
+                x.Id,
+                x.PatientId,
+                x.SubmittedAtUtc,
+                x.SystolicBp,
+                x.DiastolicBp,
+                x.Spo2,
+                x.HeartRate,
+                x.WeightLbs,
+                x.PaSystolic,
+                x.PaDiastolic,
+                x.PaMean,
+                x.PaSystolic + " / " + x.PaDiastolic + " (" + x.PaMean + ")",
+                x.Scenario.ToString(),
+                x.TrendScenario.ToString(),
+                x.Notes))
             .ToArrayAsync();
     }
 
@@ -32,14 +47,18 @@ public sealed class VitalsService(AppDbContext db, IVitalsGenerationService gene
     {
         var patient = await db.Patients.FindAsync(patientId);
         if (patient is null) return null;
-        if (request.Days is not (1 or 7 or 30 or 90)) throw new ArgumentOutOfRangeException(nameof(request.Days), "Days must be 1, 7, 30, or 90.");
+        if (request.Days is < 7 or > 30) throw new ArgumentOutOfRangeException(nameof(request.Days), "Days must be between 7 and 30.");
+        if (!Validation.TryParsePulmonaryPressureTrendScenario(request.PulmonaryPressureScenario, out var trendScenario))
+        {
+            throw new ArgumentException("Pulmonary pressure trend scenario is required.", nameof(request.PulmonaryPressureScenario));
+        }
 
         if (request.ReplaceExisting)
         {
             await db.VitalsSubmissions.Where(x => x.PatientId == patientId).ExecuteDeleteAsync();
         }
 
-        var vitals = generator.GenerateSeries(patient, request.Days, request.EndDateUtc ?? DateTime.UtcNow);
+        var vitals = generator.GenerateSeries(patient, request.Days, request.EndDateUtc ?? DateTime.UtcNow, trendScenario);
         db.VitalsSubmissions.AddRange(vitals);
         await db.SaveChangesAsync();
         return vitals.Select(x => x.ToResponse()).ToArray();

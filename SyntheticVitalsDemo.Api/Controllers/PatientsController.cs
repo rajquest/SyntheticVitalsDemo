@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using SyntheticVitalsDemo.Api.DTOs;
+using SyntheticVitalsDemo.Api.Models;
 using SyntheticVitalsDemo.Api.Services;
 
 namespace SyntheticVitalsDemo.Api.Controllers;
@@ -31,10 +32,17 @@ public sealed class PatientsController(PatientService patients) : ControllerBase
         return patient is null ? NotFound() : CreatedAtAction(nameof(Get), new { patientId = patient.Id }, patient);
     }
 
-    [HttpPost("api/clinics/{clinicId:guid}/generate-patients")]
-    public async Task<ActionResult<IReadOnlyList<PatientResponse>>> Generate(Guid clinicId, GeneratePatientsRequest request)
+    [HttpPost("api/clinics/{clinicId:guid}/patients/generate")]
+    public async Task<ActionResult<GeneratePatientsResponse>> Generate(Guid clinicId, GeneratePatientsRequest request)
     {
-        if (request.Count < 1 || request.Count > 100) return ValidationProblem("Count must be between 1 and 100.");
+        if (clinicId == Guid.Empty) return ValidationProblem("Clinic is required.");
+        if (request.Count is not (5 or 10 or 25 or 50 or 100)) return ValidationProblem("Count must be 5, 10, 25, 50, or 100.");
+        if (request.MalePercentage is < 0 or > 100) return ValidationProblem("Male percentage must be between 0 and 100.");
+        if (!Validation.TryParsePulmonaryPressureTrendScenario(request.PulmonaryPressureScenario, out _))
+        {
+            return ValidationProblem($"Pulmonary artery pressure trend must be one of: {string.Join(", ", Enum.GetNames<PulmonaryPressureTrendScenario>())}.");
+        }
+        if (request.TrendDays is < 7 or > 30) return ValidationProblem("Trend days must be between 7 and 30.");
 
         var generated = await patients.GenerateAsync(clinicId, request);
         return generated is null ? NotFound() : Ok(generated);

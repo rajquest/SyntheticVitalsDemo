@@ -14,6 +14,8 @@ public sealed class VitalsSubmission
     public int PaSystolic { get; set; }
     public int PaDiastolic { get; set; }
     public int PaMean { get; set; }
+    public string PulmonaryPressureDisplay => $"{PaSystolic} / {PaDiastolic} ({PaMean})";
     public PatientScenario Scenario { get; set; }
+    public PulmonaryPressureTrendScenario TrendScenario { get; set; } = PulmonaryPressureTrendScenario.NormalStable;
     public string? Notes { get; set; }
 }

@@ -9,9 +9,9 @@ public sealed class DashboardService(AppDbContext db)
     public async Task<DashboardSummaryResponse> GetSummaryAsync()
     {
         var recent = await db.VitalsSubmissions
-            .Include(x => x.Patient)!.ThenInclude(x => x!.Clinic)
+            .Include(x => x.Patient)
+            .ThenInclude(x => x!.Clinic)
             .OrderByDescending(x => x.SubmittedAtUtc)
-            .Take(10)
             .Select(x => new RecentVitalsSubmissionResponse(
                 x.Id,
                 x.PatientId,
@@ -26,18 +26,21 @@ public sealed class DashboardService(AppDbContext db)
                 x.PaSystolic,
                 x.PaDiastolic,
                 x.PaMean,
+                x.PaSystolic + " / " + x.PaDiastolic + " (" + x.PaMean + ")",
                 x.Scenario.ToString()))
             .ToArrayAsync();
 
-        var vitals = await db.VitalsSubmissions
-            .Select(x => new { x.SystolicBp, x.DiastolicBp, x.Spo2, x.HeartRate, x.PaMean })
-            .ToArrayAsync();
+        var totalSubmissions = await db.VitalsSubmissions.CountAsync();
+        var outOfRangeSubmissions = await db.VitalsSubmissions.CountAsync(x =>
+            x.PaSystolic < 15 || x.PaSystolic > 30 ||
+            x.PaDiastolic < 4 || x.PaDiastolic > 12 ||
+            x.PaMean < 9 || x.PaMean > 20);
 
         return new DashboardSummaryResponse(
             await db.Clinics.CountAsync(),
             await db.Patients.CountAsync(),
-            vitals.Length,
-            vitals.Count(x => Validation.IsAbnormal(x.SystolicBp, x.DiastolicBp, x.Spo2, x.HeartRate, x.PaMean)),
+            totalSubmissions,
+            outOfRangeSubmissions,
             recent);
     }
 }
