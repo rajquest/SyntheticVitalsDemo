@@ -2,13 +2,14 @@ import { CommonModule } from '@angular/common';
 import { Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../../core/api.service';
 import { ResetPatientDataResponse } from '../../core/models';
 
 @Component({
   selector: 'app-admin-settings',
-  imports: [CommonModule, FormsModule, MatIconModule, RouterLink],
+  imports: [CommonModule, FormsModule, MatIconModule, MatProgressSpinnerModule, RouterLink],
   templateUrl: './admin-settings.component.html'
 })
 export class AdminSettingsComponent {

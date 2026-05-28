@@ -5,12 +5,13 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSliderModule } from '@angular/material/slider';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { ApiService } from '../../core/api.service';
-import { Clinic, Patient, pulmonaryPressureTrendScenarios } from '../../core/models';
+import { Clinic, Patient, pulmonaryPressureScenarios, pulmonaryPressureTrendScenarios } from '../../core/models';
 
 @Component({
   selector: 'app-clinic-detail',
@@ -22,6 +23,7 @@ import { Clinic, Patient, pulmonaryPressureTrendScenarios } from '../../core/mod
     MatCheckboxModule,
     MatFormFieldModule,
     MatIconModule,
+    MatProgressSpinnerModule,
     MatSelectModule,
     MatSliderModule
   ],
@@ -35,13 +37,15 @@ export class ClinicDetailComponent implements OnInit {
   deleting = signal(false);
   selectedPatientIds = signal<Set<string>>(new Set());
   error = signal<string | null>(null);
-  countOptions = [5, 10, 25, 50, 100] as const;
-  trendDayOptions = [7, 14, 30] as const;
+  countOptions = [1, 5, 10, 25, 50, 100] as const;
+  trendDayOptions = [1, 7, 14, 30, 60, 180, 365] as const;
+  pulmonaryPressureScenarios = pulmonaryPressureScenarios;
   pulmonaryPressureTrendScenarios = pulmonaryPressureTrendScenarios;
   addPatientsForm = {
-    count: 10 as 5 | 10 | 25 | 50 | 100,
+    count: 10 as 1 | 5 | 10 | 25 | 50 | 100,
     malePercentage: 50,
-    pulmonaryPressureScenario: 'NormalStable',
+    pulmonaryPressureScenario: 'NormalPaPressure',
+    pulmonaryPressureTrendScenario: 'NormalStable',
     trendDays: 14
   };
 
@@ -116,11 +120,15 @@ export class ClinicDetailComponent implements OnInit {
       return;
     }
     if (!this.addPatientsForm.pulmonaryPressureScenario) {
+      this.error.set('Pulmonary artery pressure scenario is required.');
+      return;
+    }
+    if (!this.addPatientsForm.pulmonaryPressureTrendScenario) {
       this.error.set('Pulmonary artery pressure trend is required.');
       return;
     }
-    if (this.addPatientsForm.trendDays < 7 || this.addPatientsForm.trendDays > 30) {
-      this.error.set('Trend days must be between 7 and 30.');
+    if (![1, 7, 14, 30, 60, 180, 365].includes(this.addPatientsForm.trendDays)) {
+      this.error.set('Trend readings must be 1, 7, 14, 30, 60, 180, or 365.');
       return;
     }
 

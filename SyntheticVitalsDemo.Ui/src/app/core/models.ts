@@ -20,10 +20,14 @@ export interface Patient {
   spo2: number;
   heartRate: number;
   weightLbs: number;
-  paSystolic: number;
-  paDiastolic: number;
-  paMean: number;
-  pulmonaryPressureDisplay: string;
+  seatedPaSystolic: number;
+  seatedPaDiastolic: number;
+  seatedPaMean: number;
+  supinePaSystolic: number;
+  supinePaDiastolic: number;
+  supinePaMean: number;
+  seatedPulmonaryPressureDisplay: string;
+  supinePulmonaryPressureDisplay: string;
   createdAtUtc: string;
   vitalsSubmissionCount: number;
 }
@@ -37,10 +41,14 @@ export interface VitalsSubmission {
   spo2: number;
   heartRate: number;
   weightLbs: number;
-  paSystolic: number;
-  paDiastolic: number;
-  paMean: number;
-  pulmonaryPressureDisplay: string;
+  seatedPaSystolic: number;
+  seatedPaDiastolic: number;
+  seatedPaMean: number;
+  supinePaSystolic: number;
+  supinePaDiastolic: number;
+  supinePaMean: number;
+  seatedPulmonaryPressureDisplay: string;
+  supinePulmonaryPressureDisplay: string;
   scenario: string;
   trendScenario: string;
   notes?: string | null;
@@ -49,7 +57,6 @@ export interface VitalsSubmission {
 export interface RecentVitalsSubmission extends VitalsSubmission {
   patientName: string;
   clinicName: string;
-  pulmonaryPressureDisplay: string;
 }
 
 export interface DashboardSummary {
@@ -73,16 +80,17 @@ export interface GenerateVitalsRequest {
 }
 
 export interface GenerateVitalsSeriesRequest {
-  days: 7 | 14 | 30;
+  days: 7 | 14 | 30 | 60 | 180 | 365;
   endDateUtc?: string | null;
   replaceExisting: boolean;
   pulmonaryPressureScenario: string;
 }
 
 export interface GeneratePatientsRequest {
-  count: 5 | 10 | 25 | 50 | 100;
+  count: 1 | 5 | 10 | 25 | 50 | 100;
   malePercentage: number;
   pulmonaryPressureScenario: string;
+  pulmonaryPressureTrendScenario: string;
   trendDays: number;
 }
 

@@ -1,0 +1,91 @@
+<section class="page-header">
+  <div>
+    <h1>Patients</h1>
+    <p>One row per synthetic patient across all clinics.</p>
+  </div>
+</section>
+
+<section class="panel">
+  <mat-form-field appearance="outline" class="search-field">
+    <mat-label>Search patients</mat-label>
+    <mat-icon matPrefix>search</mat-icon>
+    <input matInput #patientSearch (input)="applyFilter(patientSearch.value)" />
+  </mat-form-field>
+
+  @if (loading()) {
+    <div class="state">Loading patients...</div>
+  } @else if (error()) {
+    <div class="state error">{{ error() }}</div>
+  } @else if (patients().length === 0) {
+    <div class="empty">No patients have been generated yet.</div>
+  } @else {
+    <div class="mat-elevation-z1 clinic-grid">
+      <table mat-table [dataSource]="dataSource" matSort>
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Name</th>
+          <td mat-cell *matCellDef="let patient">
+            <a [routerLink]="['/patients', patient.id]">{{ patient.firstName }} {{ patient.lastName }}</a>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="dateOfBirth">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>DOB</th>
+          <td mat-cell *matCellDef="let patient">{{ patient.dateOfBirth }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="sex">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Sex</th>
+          <td mat-cell *matCellDef="let patient">{{ patient.sex }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="scenario">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Scenario</th>
+          <td mat-cell *matCellDef="let patient">{{ patient.scenario }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="bp">
+          <th mat-header-cell *matHeaderCellDef>BP</th>
+          <td mat-cell *matCellDef="let patient">{{ patient.bloodPressureDisplay }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="spo2">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>SpO2</th>
+          <td mat-cell *matCellDef="let patient">{{ patient.spo2 }}%</td>
+        </ng-container>
+
+        <ng-container matColumnDef="heartRate">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>HR</th>
+          <td mat-cell *matCellDef="let patient">{{ patient.heartRate }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="weightLbs">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Weight</th>
+          <td mat-cell *matCellDef="let patient">{{ patient.weightLbs }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="seatedPulmonaryPressureDisplay">
+          <th mat-header-cell *matHeaderCellDef>Seated PA</th>
+          <td mat-cell *matCellDef="let patient">{{ patient.seatedPulmonaryPressureDisplay }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="supinePulmonaryPressureDisplay">
+          <th mat-header-cell *matHeaderCellDef>Supine PA</th>
+          <td mat-cell *matCellDef="let patient">{{ patient.supinePulmonaryPressureDisplay }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="vitalsSubmissionCount">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Submissions</th>
+          <td mat-cell *matCellDef="let patient">{{ patient.vitalsSubmissionCount }}</td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+        <tr class="mat-row" *matNoDataRow>
+          <td class="mat-cell empty" [attr.colspan]="displayedColumns.length">No matching patients.</td>
+        </tr>
+      </table>
+      <div class="grid-footer">Total rows: {{ dataSource.filteredData.length }}</div>
+      <mat-paginator [pageSize]="10" [pageSizeOptions]="[10, 25, 50, 100, 500]" showFirstLastButtons></mat-paginator>
+    </div>
+  }
+</section>

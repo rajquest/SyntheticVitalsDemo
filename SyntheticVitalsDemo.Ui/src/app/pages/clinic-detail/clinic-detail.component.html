@@ -26,8 +26,17 @@
     </div>
 
     <mat-form-field appearance="outline">
-      <mat-label>Pulmonary Artery Pressure Trend</mat-label>
+      <mat-label>PA pressure scenario</mat-label>
       <mat-select [(ngModel)]="addPatientsForm.pulmonaryPressureScenario" required>
+        @for (scenario of pulmonaryPressureScenarios; track scenario.value) {
+          <mat-option [value]="scenario.value">{{ scenario.label }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>PA pressure trend</mat-label>
+      <mat-select [(ngModel)]="addPatientsForm.pulmonaryPressureTrendScenario" required>
         @for (scenario of pulmonaryPressureTrendScenarios; track scenario.value) {
           <mat-option [value]="scenario.value">{{ scenario.label }}</mat-option>
         }
@@ -42,7 +51,11 @@
     </mat-form-field>
 
     <button type="button" class="add-action" (click)="generatePatients()" [disabled]="generating()">
-      <mat-icon aria-hidden="true">person_add</mat-icon>
+      @if (generating()) {
+        <mat-spinner diameter="18" />
+      } @else {
+        <mat-icon aria-hidden="true">person_add</mat-icon>
+      }
       <span>{{ generating() ? 'Adding...' : 'Add Patients' }}</span>
     </button>
   </div>
@@ -57,7 +70,11 @@
       aria-label="Delete selected patients"
       [disabled]="selectedPatientCount === 0 || deleting()"
       (click)="deleteSelectedPatients()">
-      <mat-icon>delete</mat-icon>
+      @if (deleting()) {
+        <mat-spinner diameter="20" />
+      } @else {
+        <mat-icon>delete</mat-icon>
+      }
     </button>
   </div>
   @if (loading()) {
@@ -76,7 +93,7 @@
                 [indeterminate]="somePatientsSelected()"
                 (change)="toggleAllPatients($event.checked)" />
             </th>
-            <th>Name</th><th>DOB</th><th>Sex</th><th>BP</th><th>SpO2</th><th>HR</th><th>Weight</th><th>PA Pressure</th><th>Scenario</th>
+            <th>Name</th><th>DOB</th><th>Sex</th><th>BP</th><th>SpO2</th><th>HR</th><th>Weight</th><th>Seated PA</th><th>Supine PA</th><th>Scenario</th>
           </tr>
         </thead>
         <tbody>
@@ -95,12 +112,14 @@
               <td>{{ patient.spo2 }}%</td>
               <td>{{ patient.heartRate }}</td>
               <td>{{ patient.weightLbs }}</td>
-              <td>{{ patient.pulmonaryPressureDisplay }}</td>
+              <td>{{ patient.seatedPulmonaryPressureDisplay }}</td>
+              <td>{{ patient.supinePulmonaryPressureDisplay }}</td>
               <td>{{ patient.scenario }}</td>
             </tr>
           }
         </tbody>
       </table>
+      <div class="grid-footer">Total rows: {{ patients().length }}</div>
     </div>
   }
 </section>

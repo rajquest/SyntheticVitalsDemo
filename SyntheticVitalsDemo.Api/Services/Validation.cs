@@ -39,10 +39,17 @@ public static class Validation
         return null;
     }
 
-    public static bool IsAbnormal(int systolicBp, int diastolicBp, int spo2, int heartRate, int paMean) =>
+    public static bool IsAbnormal(int systolicBp, int diastolicBp, int spo2, int heartRate, int seatedPaMean, int supinePaMean) =>
         systolicBp >= 140 || systolicBp < 90 ||
         diastolicBp >= 90 || diastolicBp < 60 ||
         spo2 < 92 ||
         heartRate > 110 || heartRate < 50 ||
-        paMean > 25;
+        seatedPaMean > PulmonaryPressureGeneratorService.WarningMeanThreshold ||
+        supinePaMean > PulmonaryPressureGeneratorService.WarningMeanThreshold;
+
+    public static bool IsPulmonaryPressureOutOfReferenceRange(int systolic, int diastolic, int mean) =>
+        PulmonaryPressureGeneratorService.Classify(new PulmonaryPressure(systolic, diastolic, mean)) != PulmonaryPressureSeverity.Reference;
+
+    public static bool IsPulmonaryPressureHardStop(int systolic, int diastolic, int mean) =>
+        PulmonaryPressureGeneratorService.Classify(new PulmonaryPressure(systolic, diastolic, mean)) == PulmonaryPressureSeverity.HardStop;
 }

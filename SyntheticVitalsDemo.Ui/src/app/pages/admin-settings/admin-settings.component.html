@@ -21,7 +21,11 @@
   </label>
 
   <button class="danger-action" type="button" (click)="resetPatientData()" [disabled]="!confirmReset || resetting()">
-    <mat-icon aria-hidden="true">delete</mat-icon>
+    @if (resetting()) {
+      <mat-spinner diameter="18" />
+    } @else {
+      <mat-icon aria-hidden="true">delete</mat-icon>
+    }
     <span>{{ resetting() ? 'Resetting...' : 'Reset Patient Data' }}</span>
   </button>
 
