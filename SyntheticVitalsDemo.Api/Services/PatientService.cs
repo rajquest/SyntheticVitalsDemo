@@ -7,6 +7,37 @@ namespace SyntheticVitalsDemo.Api.Services;
 
 public sealed class PatientService(AppDbContext db, SyntheticPatientGeneratorService generator, IVitalsGenerationService vitalsGenerator)
 {
+    public async Task<IReadOnlyList<PatientResponse>> GetAllAsync() =>
+        await db.Patients
+            .Include(x => x.VitalsSubmissions)
+            .OrderBy(x => x.LastName)
+            .ThenBy(x => x.FirstName)
+            .Select(x => new PatientResponse(
+                x.Id,
+                x.ClinicId,
+                x.FirstName,
+                x.LastName,
+                x.DateOfBirth,
+                x.Sex.ToString(),
+                x.Scenario.ToString(),
+                x.SystolicBp,
+                x.DiastolicBp,
+                x.SystolicBp + " / " + x.DiastolicBp,
+                x.Spo2,
+                x.HeartRate,
+                x.WeightLbs,
+                x.SeatedPaSystolic,
+                x.SeatedPaDiastolic,
+                x.SeatedPaMean,
+                x.SupinePaSystolic,
+                x.SupinePaDiastolic,
+                x.SupinePaMean,
+                x.SeatedPaSystolic + " / " + x.SeatedPaDiastolic + " (" + x.SeatedPaMean + ")",
+                x.SupinePaSystolic + " / " + x.SupinePaDiastolic + " (" + x.SupinePaMean + ")",
+                x.CreatedAtUtc,
+                x.VitalsSubmissions.Count))
+            .ToArrayAsync();
+
     public async Task<IReadOnlyList<PatientResponse>?> GetForClinicAsync(Guid clinicId)
     {
         if (!await db.Clinics.AnyAsync(x => x.Id == clinicId)) return null;
@@ -30,10 +61,14 @@ public sealed class PatientService(AppDbContext db, SyntheticPatientGeneratorSer
                 x.Spo2,
                 x.HeartRate,
                 x.WeightLbs,
-                x.PaSystolic,
-                x.PaDiastolic,
-                x.PaMean,
-                x.PaSystolic + " / " + x.PaDiastolic + " (" + x.PaMean + ")",
+                x.SeatedPaSystolic,
+                x.SeatedPaDiastolic,
+                x.SeatedPaMean,
+                x.SupinePaSystolic,
+                x.SupinePaDiastolic,
+                x.SupinePaMean,
+                x.SeatedPaSystolic + " / " + x.SeatedPaDiastolic + " (" + x.SeatedPaMean + ")",
+                x.SupinePaSystolic + " / " + x.SupinePaDiastolic + " (" + x.SupinePaMean + ")",
                 x.CreatedAtUtc,
                 x.VitalsSubmissions.Count))
             .ToArrayAsync();
@@ -69,9 +104,9 @@ public sealed class PatientService(AppDbContext db, SyntheticPatientGeneratorSer
     public async Task<GeneratePatientsResponse?> GenerateAsync(Guid clinicId, GeneratePatientsRequest request)
     {
         if (!await db.Clinics.AnyAsync(x => x.Id == clinicId)) return null;
-        var patientScenario = ResolvePatientScenario(request.Scenario);
-        Validation.TryParsePulmonaryPressureTrendScenario(request.PulmonaryPressureScenario, out var trendScenario);
-        var trendDays = Math.Clamp(request.TrendDays, 7, 30);
+        var patientScenario = ResolvePatientScenario(request);
+        Validation.TryParsePulmonaryPressureTrendScenario(request.PulmonaryPressureTrendScenario, out var trendScenario);
+        var trendDays = request.TrendDays;
 
         var patients = generator.Generate(clinicId, request, patientScenario);
         var vitalsSubmissions = patients
@@ -84,9 +119,12 @@ public sealed class PatientService(AppDbContext db, SyntheticPatientGeneratorSer
                 patient.Spo2 = latest.Spo2;
                 patient.HeartRate = latest.HeartRate;
                 patient.WeightLbs = latest.WeightLbs;
-                patient.PaSystolic = latest.PaSystolic;
-                patient.PaDiastolic = latest.PaDiastolic;
-                patient.PaMean = latest.PaMean;
+                patient.SeatedPaSystolic = latest.SeatedPaSystolic;
+                patient.SeatedPaDiastolic = latest.SeatedPaDiastolic;
+                patient.SeatedPaMean = latest.SeatedPaMean;
+                patient.SupinePaSystolic = latest.SupinePaSystolic;
+                patient.SupinePaDiastolic = latest.SupinePaDiastolic;
+                patient.SupinePaMean = latest.SupinePaMean;
                 return series;
             })
             .ToArray();
@@ -103,16 +141,21 @@ public sealed class PatientService(AppDbContext db, SyntheticPatientGeneratorSer
             patients.Select(x => x.ToResponse()).ToArray());
     }
 
-    private static PatientScenario ResolvePatientScenario(string? scenario)
+    private static PatientScenario ResolvePatientScenario(GeneratePatientsRequest request)
     {
-        if (!string.IsNullOrWhiteSpace(scenario) &&
-            Validation.TryParseScenario(scenario, out var parsed) &&
+        if (!string.IsNullOrWhiteSpace(request.Scenario) &&
+            Validation.TryParseScenario(request.Scenario, out var parsedScenario))
+        {
+            return parsedScenario;
+        }
+
+        if (Validation.TryParseScenario(request.PulmonaryPressureScenario, out var parsed) &&
             Validation.PulmonaryPressureScenarios.Contains(parsed))
         {
             return parsed;
         }
 
-        return PatientScenario.ElevatedPaPressure;
+        return PatientScenario.NormalPaPressure;
     }
 
     public async Task<PatientResponse?> UpdateAsync(Guid id, UpdatePatientRequest request)

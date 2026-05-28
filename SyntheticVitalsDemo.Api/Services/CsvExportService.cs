@@ -22,15 +22,18 @@ public sealed class CsvExportService(AppDbContext db)
                 x.Spo2,
                 x.HeartRate,
                 x.WeightLbs,
-                x.PaSystolic,
-                x.PaDiastolic,
-                x.PaMean,
+                x.SeatedPaSystolic,
+                x.SeatedPaDiastolic,
+                x.SeatedPaMean,
+                x.SupinePaSystolic,
+                x.SupinePaDiastolic,
+                x.SupinePaMean,
                 x.Notes
             })
             .ToArrayAsync();
 
         var csv = new StringBuilder();
-        csv.AppendLine("Clinic,Patient,Scenario,SubmittedAtUtc,SystolicBp,DiastolicBp,Spo2,HeartRate,WeightLbs,PaSystolic,PaDiastolic,PaMean,Notes");
+        csv.AppendLine("Clinic,Patient,Scenario,SubmittedAtUtc,SystolicBp,DiastolicBp,Spo2,HeartRate,WeightLbs,SeatedPaSystolic,SeatedPaDiastolic,SeatedPaMean,SupinePaSystolic,SupinePaDiastolic,SupinePaMean,Notes");
         foreach (var row in rows)
         {
             csv.AppendLine(string.Join(",", [
@@ -43,9 +46,12 @@ public sealed class CsvExportService(AppDbContext db)
                 row.Spo2.ToString(),
                 row.HeartRate.ToString(),
                 row.WeightLbs.ToString("0.0"),
-                row.PaSystolic.ToString(),
-                row.PaDiastolic.ToString(),
-                row.PaMean.ToString(),
+                row.SeatedPaSystolic.ToString(),
+                row.SeatedPaDiastolic.ToString(),
+                row.SeatedPaMean.ToString(),
+                row.SupinePaSystolic.ToString(),
+                row.SupinePaDiastolic.ToString(),
+                row.SupinePaMean.ToString(),
                 Escape(row.Notes ?? string.Empty)
             ]));
         }

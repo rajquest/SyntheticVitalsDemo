@@ -25,7 +25,7 @@ public sealed class VitalsController(VitalsService vitals) : ControllerBase
     [HttpPost("generate-vitals-series")]
     public async Task<ActionResult<IReadOnlyList<VitalsSubmissionResponse>>> GenerateSeries(Guid patientId, GenerateVitalsSeriesRequest request)
     {
-        if (request.Days is < 7 or > 30) return ValidationProblem("Days must be between 7 and 30.");
+        if (request.Days is not (7 or 14 or 30 or 60 or 180 or 365)) return ValidationProblem("Days must be 7, 14, 30, 60, 180, or 365.");
         if (!Validation.TryParsePulmonaryPressureTrendScenario(request.PulmonaryPressureScenario, out _))
         {
             return ValidationProblem("Pulmonary artery pressure trend is required.");

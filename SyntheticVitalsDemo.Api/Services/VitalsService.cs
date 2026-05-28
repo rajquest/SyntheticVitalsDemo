@@ -22,10 +22,14 @@ public sealed class VitalsService(AppDbContext db, IVitalsGenerationService gene
                 x.Spo2,
                 x.HeartRate,
                 x.WeightLbs,
-                x.PaSystolic,
-                x.PaDiastolic,
-                x.PaMean,
-                x.PaSystolic + " / " + x.PaDiastolic + " (" + x.PaMean + ")",
+                x.SeatedPaSystolic,
+                x.SeatedPaDiastolic,
+                x.SeatedPaMean,
+                x.SupinePaSystolic,
+                x.SupinePaDiastolic,
+                x.SupinePaMean,
+                x.SeatedPaSystolic + " / " + x.SeatedPaDiastolic + " (" + x.SeatedPaMean + ")",
+                x.SupinePaSystolic + " / " + x.SupinePaDiastolic + " (" + x.SupinePaMean + ")",
                 x.Scenario.ToString(),
                 x.TrendScenario.ToString(),
                 x.Notes))
@@ -47,7 +51,10 @@ public sealed class VitalsService(AppDbContext db, IVitalsGenerationService gene
     {
         var patient = await db.Patients.FindAsync(patientId);
         if (patient is null) return null;
-        if (request.Days is < 7 or > 30) throw new ArgumentOutOfRangeException(nameof(request.Days), "Days must be between 7 and 30.");
+        if (request.Days is not (7 or 14 or 30 or 60 or 180 or 365))
+        {
+            throw new ArgumentOutOfRangeException(nameof(request.Days), "Days must be 7, 14, 30, 60, 180, or 365.");
+        }
         if (!Validation.TryParsePulmonaryPressureTrendScenario(request.PulmonaryPressureScenario, out var trendScenario))
         {
             throw new ArgumentException("Pulmonary pressure trend scenario is required.", nameof(request.PulmonaryPressureScenario));

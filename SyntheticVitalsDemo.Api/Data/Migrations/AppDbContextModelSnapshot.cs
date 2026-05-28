@@ -72,13 +72,22 @@ namespace SyntheticVitalsDemo.Api.Data.Migrations
                         .HasMaxLength(80)
                         .HasColumnType("varchar(80)");
 
-                    b.Property<int>("PaDiastolic")
+                    b.Property<int>("SeatedPaDiastolic")
                         .HasColumnType("int");
 
-                    b.Property<int>("PaMean")
+                    b.Property<int>("SeatedPaMean")
                         .HasColumnType("int");
 
-                    b.Property<int>("PaSystolic")
+                    b.Property<int>("SeatedPaSystolic")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SupinePaDiastolic")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SupinePaMean")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SupinePaSystolic")
                         .HasColumnType("int");
 
                     b.Property<string>("Scenario")
@@ -124,13 +133,13 @@ namespace SyntheticVitalsDemo.Api.Data.Migrations
                         .HasMaxLength(400)
                         .HasColumnType("varchar(400)");
 
-                    b.Property<int>("PaDiastolic")
+                    b.Property<int>("SeatedPaDiastolic")
                         .HasColumnType("int");
 
-                    b.Property<int>("PaMean")
+                    b.Property<int>("SeatedPaMean")
                         .HasColumnType("int");
 
-                    b.Property<int>("PaSystolic")
+                    b.Property<int>("SeatedPaSystolic")
                         .HasColumnType("int");
 
                     b.Property<Guid>("PatientId")
@@ -146,6 +155,15 @@ namespace SyntheticVitalsDemo.Api.Data.Migrations
 
                     b.Property<DateTime>("SubmittedAtUtc")
                         .HasColumnType("datetime(6)");
+
+                    b.Property<int>("SupinePaDiastolic")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SupinePaMean")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SupinePaSystolic")
+                        .HasColumnType("int");
 
                     b.Property<int>("SystolicBp")
                         .HasColumnType("int");

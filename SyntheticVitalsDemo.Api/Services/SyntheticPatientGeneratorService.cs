@@ -25,7 +25,7 @@ public sealed class SyntheticPatientGeneratorService(PulmonaryPressureGeneratorS
         var bogusGender = sex == Sex.Male ? BogusGender.Male : BogusGender.Female;
         var firstName = _faker.Name.FirstName(bogusGender);
         var lastName = _faker.Name.LastName(bogusGender);
-        var pressure = pressureGenerator.Generate(scenario);
+        var pressure = pressureGenerator.GeneratePair(scenario);
         var vitals = GenerateVitals(scenario);
 
         return new Patient
@@ -41,9 +41,12 @@ public sealed class SyntheticPatientGeneratorService(PulmonaryPressureGeneratorS
             Spo2 = vitals.Spo2,
             HeartRate = vitals.HeartRate,
             WeightLbs = vitals.WeightLbs,
-            PaSystolic = pressure.Systolic,
-            PaDiastolic = pressure.Diastolic,
-            PaMean = pressure.Mean
+            SeatedPaSystolic = pressure.Seated.Systolic,
+            SeatedPaDiastolic = pressure.Seated.Diastolic,
+            SeatedPaMean = pressure.Seated.Mean,
+            SupinePaSystolic = pressure.Supine.Systolic,
+            SupinePaDiastolic = pressure.Supine.Diastolic,
+            SupinePaMean = pressure.Supine.Mean
         };
     }
 

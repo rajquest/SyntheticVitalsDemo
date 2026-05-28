@@ -14,10 +14,14 @@ public sealed record PatientResponse(
     int Spo2,
     int HeartRate,
     decimal WeightLbs,
-    int PaSystolic,
-    int PaDiastolic,
-    int PaMean,
-    string PulmonaryPressureDisplay,
+    int SeatedPaSystolic,
+    int SeatedPaDiastolic,
+    int SeatedPaMean,
+    int SupinePaSystolic,
+    int SupinePaDiastolic,
+    int SupinePaMean,
+    string SeatedPulmonaryPressureDisplay,
+    string SupinePulmonaryPressureDisplay,
     DateTime CreatedAtUtc,
     int VitalsSubmissionCount);
 
@@ -27,6 +31,7 @@ public sealed record GeneratePatientsRequest(
     int Count,
     int MalePercentage,
     string PulmonaryPressureScenario,
+    string PulmonaryPressureTrendScenario,
     int TrendDays,
     string? Scenario = null);
 public sealed record GeneratePatientsResponse(

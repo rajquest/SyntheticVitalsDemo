@@ -35,6 +35,8 @@ builder.Services.AddScoped<PatientService>();
 builder.Services.AddScoped<VitalsService>();
 builder.Services.AddScoped<DashboardService>();
 builder.Services.AddScoped<CsvExportService>();
+builder.Services.AddScoped<Hl7ExportService>();
+builder.Services.AddScoped<FhirExportService>();
 builder.Services.AddScoped<DemoDataResetService>();
 builder.Services.AddScoped<DbSeeder>();
 builder.Services.AddScoped<IVitalsGenerationService, VitalsGenerationService>();

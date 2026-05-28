@@ -23,18 +23,25 @@ public sealed class DashboardService(AppDbContext db)
                 x.Spo2,
                 x.HeartRate,
                 x.WeightLbs,
-                x.PaSystolic,
-                x.PaDiastolic,
-                x.PaMean,
-                x.PaSystolic + " / " + x.PaDiastolic + " (" + x.PaMean + ")",
+                x.SeatedPaSystolic,
+                x.SeatedPaDiastolic,
+                x.SeatedPaMean,
+                x.SupinePaSystolic,
+                x.SupinePaDiastolic,
+                x.SupinePaMean,
+                x.SeatedPaSystolic + " / " + x.SeatedPaDiastolic + " (" + x.SeatedPaMean + ")",
+                x.SupinePaSystolic + " / " + x.SupinePaDiastolic + " (" + x.SupinePaMean + ")",
                 x.Scenario.ToString()))
             .ToArrayAsync();
 
         var totalSubmissions = await db.VitalsSubmissions.CountAsync();
         var outOfRangeSubmissions = await db.VitalsSubmissions.CountAsync(x =>
-            x.PaSystolic < 15 || x.PaSystolic > 30 ||
-            x.PaDiastolic < 4 || x.PaDiastolic > 12 ||
-            x.PaMean < 9 || x.PaMean > 20);
+            x.SeatedPaSystolic < PulmonaryPressureGeneratorService.ReferenceSystolicMin || x.SeatedPaSystolic > PulmonaryPressureGeneratorService.ReferenceSystolicMax ||
+            x.SeatedPaDiastolic < PulmonaryPressureGeneratorService.ReferenceDiastolicMin || x.SeatedPaDiastolic > PulmonaryPressureGeneratorService.ReferenceDiastolicMax ||
+            x.SeatedPaMean < PulmonaryPressureGeneratorService.ReferenceMeanMin || x.SeatedPaMean > PulmonaryPressureGeneratorService.ReferenceMeanMax ||
+            x.SupinePaSystolic < PulmonaryPressureGeneratorService.ReferenceSystolicMin || x.SupinePaSystolic > PulmonaryPressureGeneratorService.ReferenceSystolicMax ||
+            x.SupinePaDiastolic < PulmonaryPressureGeneratorService.ReferenceDiastolicMin || x.SupinePaDiastolic > PulmonaryPressureGeneratorService.ReferenceDiastolicMax ||
+            x.SupinePaMean < PulmonaryPressureGeneratorService.ReferenceMeanMin || x.SupinePaMean > PulmonaryPressureGeneratorService.ReferenceMeanMax);
 
         return new DashboardSummaryResponse(
             await db.Clinics.CountAsync(),

@@ -64,6 +64,14 @@ button:not(.mat-mdc-button-base),
   padding: 0 14px;
 }
 
+button mat-spinner,
+.button mat-spinner,
+.add-action mat-spinner,
+.danger-action mat-spinner {
+  --mdc-circular-progress-active-indicator-color: currentColor;
+  flex: 0 0 auto;
+}
+
 button:not(.mat-mdc-button-base):hover,
 .button:hover {
   background: var(--color-primary-hover);
@@ -242,6 +250,20 @@ tbody tr:hover a {
   overflow-x: auto;
 }
 
+pre {
+  background: #111827;
+  border-radius: 6px;
+  color: #f9fafb;
+  font-family: "Cascadia Mono", "Segoe UI Mono", Consolas, monospace;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  margin: 0;
+  overflow-x: auto;
+  padding: 14px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .actions {
   display: flex;
   gap: 8px;
@@ -317,8 +339,42 @@ tbody tr:hover a {
   --mat-icon-button-icon-color: var(--color-muted);
 }
 
+.report-action {
+  gap: 8px;
+  min-width: max-content;
+}
+
+.report-action mat-icon {
+  color: inherit;
+}
+
 .search-field {
   width: min(100%, 520px);
+}
+
+.table-controls {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.segmented-control {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.segmented-control button {
+  min-height: 34px;
+  padding: 0 12px;
+}
+
+.segmented-control button.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .clinic-grid {
@@ -350,6 +406,15 @@ tbody tr:hover a {
 
 .clinic-grid mat-paginator {
   border-top: 1px solid var(--color-border);
+}
+
+.grid-footer {
+  border-top: 1px solid var(--color-border);
+  color: var(--color-muted);
+  font-size: 0.86rem;
+  font-weight: 700;
+  padding: 10px 14px;
+  text-align: right;
 }
 
 .state,
@@ -487,6 +552,23 @@ tbody tr:hover a {
   cursor: not-allowed;
 }
 
+.dialog-close-button {
+  background: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  border-radius: 6px;
+  color: var(--color-text-inverse);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+  min-height: 38px;
+  padding: 0 14px;
+}
+
+.dialog-close-button:hover {
+  background: var(--color-primary-dark);
+  border-color: var(--color-primary-dark);
+}
+
 .chart-grid {
   display: grid;
   gap: 16px;
@@ -558,5 +640,47 @@ tbody tr:hover a {
   .controls {
     align-items: stretch;
     flex-direction: column;
+  }
+}
+
+@media print {
+  .topbar,
+  .demo-banner,
+  .back-link,
+  .controls,
+  .mat-mdc-paginator,
+  button {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff;
+  }
+
+  main {
+    max-width: none;
+    padding: 0;
+  }
+
+  .panel,
+  .metric,
+  .chart-box {
+    break-inside: avoid;
+    box-shadow: none;
+  }
+
+  .table-wrap,
+  .clinic-grid {
+    overflow: visible;
+  }
+
+  table {
+    min-width: 0;
+    width: 100%;
+  }
+
+  th,
+  td {
+    padding: 6px;
   }
 }
