@@ -13,7 +13,7 @@ import {
   VitalsSubmission
 } from './models';
 
-const apiBaseUrl = 'http://localhost:5000/api';
+const apiBaseUrl = 'http://localhost:7000/api';
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
@@ -33,6 +33,10 @@ export class ApiService {
 
   getPatients(clinicId: string) {
     return this.http.get<Patient[]>(`${apiBaseUrl}/clinics/${clinicId}/patients`);
+  }
+
+  getAllPatients() {
+    return this.http.get<Patient[]>(`${apiBaseUrl}/patients`);
   }
 
   getPatient(id: string) {
@@ -69,6 +73,14 @@ export class ApiService {
 
   deleteVitals(patientId: string) {
     return this.http.delete<void>(`${apiBaseUrl}/patients/${patientId}/vitals`);
+  }
+
+  getVitalsSubmissionHl7(submissionId: string) {
+    return this.http.get(`${apiBaseUrl}/export/vitals/${submissionId}/hl7`, { responseType: 'text' });
+  }
+
+  getVitalsSubmissionFhir(submissionId: string) {
+    return this.http.get(`${apiBaseUrl}/export/vitals/${submissionId}/fhir`, { responseType: 'text' });
   }
 
   resetPatientData() {

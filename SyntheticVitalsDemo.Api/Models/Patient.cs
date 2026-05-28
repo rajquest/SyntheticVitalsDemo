@@ -15,11 +15,15 @@ public sealed class Patient
     public int Spo2 { get; set; }
     public int HeartRate { get; set; }
     public decimal WeightLbs { get; set; }
-    public int PaSystolic { get; set; }
-    public int PaDiastolic { get; set; }
-    public int PaMean { get; set; }
+    public int SeatedPaSystolic { get; set; }
+    public int SeatedPaDiastolic { get; set; }
+    public int SeatedPaMean { get; set; }
+    public int SupinePaSystolic { get; set; }
+    public int SupinePaDiastolic { get; set; }
+    public int SupinePaMean { get; set; }
     public string BloodPressureDisplay => $"{SystolicBp} / {DiastolicBp}";
-    public string PulmonaryPressureDisplay => $"{PaSystolic} / {PaDiastolic} ({PaMean})";
+    public string SeatedPulmonaryPressureDisplay => $"{SeatedPaSystolic} / {SeatedPaDiastolic} ({SeatedPaMean})";
+    public string SupinePulmonaryPressureDisplay => $"{SupinePaSystolic} / {SupinePaDiastolic} ({SupinePaMean})";
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
     public List<VitalsSubmission> VitalsSubmissions { get; set; } = [];
 }

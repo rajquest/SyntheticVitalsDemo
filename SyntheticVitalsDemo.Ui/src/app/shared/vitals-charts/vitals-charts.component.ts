@@ -22,9 +22,12 @@ export class VitalsChartsComponent {
       hr: [{ label: 'Heart rate', data: this.vitals.map(v => v.heartRate), borderColor: '#333333' }],
       weight: [{ label: 'Weight', data: this.vitals.map(v => v.weightLbs), borderColor: '#898D8D' }],
       pa: [
-        { label: 'PA systolic', data: this.vitals.map(v => v.paSystolic), borderColor: '#000000' },
-        { label: 'PA diastolic', data: this.vitals.map(v => v.paDiastolic), borderColor: '#898D8D', borderDash: [6, 4] },
-        { label: 'PA mean', data: this.vitals.map(v => v.paMean), borderColor: '#333333', borderDash: [2, 4] }
+        { label: 'Seated PA systolic', data: this.vitals.map(v => v.seatedPaSystolic), borderColor: '#000000' },
+        { label: 'Seated PA diastolic', data: this.vitals.map(v => v.seatedPaDiastolic), borderColor: '#898D8D', borderDash: [6, 4] },
+        { label: 'Seated PA mean', data: this.vitals.map(v => v.seatedPaMean), borderColor: '#333333', borderDash: [2, 4] },
+        { label: 'Supine PA systolic', data: this.vitals.map(v => v.supinePaSystolic), borderColor: '#006D77' },
+        { label: 'Supine PA diastolic', data: this.vitals.map(v => v.supinePaDiastolic), borderColor: '#E29578', borderDash: [6, 4] },
+        { label: 'Supine PA mean', data: this.vitals.map(v => v.supinePaMean), borderColor: '#7A3E9D', borderDash: [2, 4] }
       ]
     }[kind];
 

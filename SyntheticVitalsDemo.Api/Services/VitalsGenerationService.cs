@@ -2,12 +2,14 @@ using SyntheticVitalsDemo.Api.Models;
 
 namespace SyntheticVitalsDemo.Api.Services;
 
-public sealed class VitalsGenerationService(PulmonaryPressureTrendGeneratorService pressureTrendGenerator) : IVitalsGenerationService
+public sealed class VitalsGenerationService(
+    PulmonaryPressureTrendGeneratorService pressureTrendGenerator,
+    PulmonaryPressureGeneratorService pressureGenerator) : IVitalsGenerationService
 {
     private readonly Random _random = new(1729);
 
     public int CalculatePaMean(int paSystolic, int paDiastolic) =>
-        (int)Math.Round(paDiastolic + (paSystolic - paDiastolic) / 3.0, MidpointRounding.AwayFromZero);
+        PulmonaryPressureGeneratorService.CalculateMean(paSystolic, paDiastolic);
 
     public IReadOnlyList<VitalsSubmission> GenerateSeries(Patient patient, int days, DateTime endDateUtc)
     {
@@ -28,16 +30,23 @@ public sealed class VitalsGenerationService(PulmonaryPressureTrendGeneratorServi
         DateTime endDateUtc,
         PulmonaryPressureTrendScenario trendScenario)
     {
-        days = Math.Clamp(days, 7, 30);
+        days = Math.Clamp(days, 1, 365);
         var pressureReadings = pressureTrendGenerator.Generate(trendScenario, days, endDateUtc);
 
         return pressureReadings
             .Select((pressure, index) =>
             {
                 var vitals = Generate(patient, pressure.ReadingDateUtc, index, pressureReadings.Count);
-                vitals.PaSystolic = pressure.PaSystolic;
-                vitals.PaDiastolic = pressure.PaDiastolic;
-                vitals.PaMean = pressure.PaMean;
+                vitals.SeatedPaSystolic = pressure.SeatedPaSystolic;
+                vitals.SeatedPaDiastolic = pressure.SeatedPaDiastolic;
+                vitals.SeatedPaMean = pressure.SeatedPaMean;
+                var supinePressure = pressureGenerator.GenerateSupineFromSeated(new PulmonaryPressure(
+                    pressure.SeatedPaSystolic,
+                    pressure.SeatedPaDiastolic,
+                    pressure.SeatedPaMean));
+                vitals.SupinePaSystolic = supinePressure.Systolic;
+                vitals.SupinePaDiastolic = supinePressure.Diastolic;
+                vitals.SupinePaMean = supinePressure.Mean;
                 vitals.TrendScenario = trendScenario;
                 vitals.Notes = $"Synthetic PA pressure trend: {trendScenario}.";
                 return vitals;
@@ -66,14 +75,14 @@ public sealed class VitalsGenerationService(PulmonaryPressureTrendGeneratorServi
             _ => (Sys: 118, Dia: 74)
         };
 
-        var pa = patient.Scenario switch
+        var paScenario = patient.Scenario switch
         {
-            PatientScenario.ElevatedPaPressure => (Sys: 48, Dia: 24),
-            PatientScenario.Hypertension => (Sys: 36, Dia: 17),
-            PatientScenario.HeartFailureStable => (Sys: 38, Dia: 18),
-            PatientScenario.HeartFailureWorsening => (Sys: 32 + (int)(trend * 18), Dia: 15 + (int)(trend * 9)),
-            PatientScenario.HeartFailureImproving => (Sys: 48 - (int)((1m - trend) * 16), Dia: 24 - (int)((1m - trend) * 8)),
-            _ => (Sys: 26, Dia: 11)
+            PatientScenario.ElevatedPaPressure => PatientScenario.ModeratePulmonaryHypertension,
+            PatientScenario.Hypertension => PatientScenario.MildPulmonaryHypertension,
+            PatientScenario.HeartFailureStable => PatientScenario.MildPulmonaryHypertension,
+            PatientScenario.HeartFailureWorsening => trend > 0.65m ? PatientScenario.SeverePulmonaryHypertension : PatientScenario.ModeratePulmonaryHypertension,
+            PatientScenario.HeartFailureImproving => trend < 0.35m ? PatientScenario.ModeratePulmonaryHypertension : PatientScenario.MildPulmonaryHypertension,
+            _ => PatientScenario.NormalPaPressure
         };
 
         var lowSpo2Episode = patient.Scenario == PatientScenario.LowSpo2Episode && total > 1 && index >= total / 2 - 1 && index <= total / 2 + 1;
@@ -102,8 +111,7 @@ public sealed class VitalsGenerationService(PulmonaryPressureTrendGeneratorServi
             _ => 0m
         };
 
-        var paSystolic = Clamp(pa.Sys + Jitter(2), 10, 90);
-        var paDiastolic = Clamp(pa.Dia + Jitter(2), 5, Math.Min(45, paSystolic - 4));
+        var pa = pressureGenerator.GeneratePair(paScenario);
 
         return new VitalsSubmission
         {
@@ -114,9 +122,12 @@ public sealed class VitalsGenerationService(PulmonaryPressureTrendGeneratorServi
             Spo2 = Clamp(spo2Base + Jitter(1), 75, 100),
             HeartRate = Clamp(hrBase + Jitter(5), 40, 160),
             WeightLbs = Math.Round(baselineWeight + weightTrend + (decimal)Jitter(1) / 2, 1),
-            PaSystolic = paSystolic,
-            PaDiastolic = paDiastolic,
-            PaMean = CalculatePaMean(paSystolic, paDiastolic),
+            SeatedPaSystolic = pa.Seated.Systolic,
+            SeatedPaDiastolic = pa.Seated.Diastolic,
+            SeatedPaMean = pa.Seated.Mean,
+            SupinePaSystolic = pa.Supine.Systolic,
+            SupinePaDiastolic = pa.Supine.Diastolic,
+            SupinePaMean = pa.Supine.Mean,
             Scenario = patient.Scenario,
             TrendScenario = PulmonaryPressureTrendScenario.NormalStable,
             Notes = patient.Scenario == PatientScenario.LowSpo2Episode && lowSpo2Episode

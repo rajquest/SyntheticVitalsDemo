@@ -11,18 +11,18 @@ public sealed class PulmonaryPressureTrendGeneratorService
         int days,
         DateTime endDateUtc)
     {
-        days = Math.Clamp(days, 7, 30);
+        days = Math.Clamp(days, 1, 365);
         var start = endDateUtc.Date.AddDays(-(days - 1)).AddHours(8);
 
         return scenario switch
         {
-            PulmonaryPressureTrendScenario.NormalStable => StableSeries(scenario, days, start, 15, 30, 4, 12, 9, 20),
-            PulmonaryPressureTrendScenario.MildlyElevatedStable => StableSeries(scenario, days, start, 31, 45, 13, 20, 21, 30),
+            PulmonaryPressureTrendScenario.NormalStable => StableSeries(scenario, days, start, 15, 30, 4, 14, 9, 16),
+            PulmonaryPressureTrendScenario.MildlyElevatedStable => StableSeries(scenario, days, start, 31, 45, 15, 22, 17, 28),
             PulmonaryPressureTrendScenario.ProgressivelyWorseningPaMean => DirectionalSeries(scenario, days, start, 21, 28, 35, 50),
             PulmonaryPressureTrendScenario.SuddenPaPressureSpike => SpikeSeries(scenario, days, start),
             PulmonaryPressureTrendScenario.ImprovingAfterDiureticAdjustment => DirectionalSeries(scenario, days, start, 32, 50, 18, 30),
             PulmonaryPressureTrendScenario.PersistentlyHighPaDiastolic => StableSeries(scenario, days, start, 40, 70, 22, 40, 30, 55),
-            _ => StableSeries(PulmonaryPressureTrendScenario.NormalStable, days, start, 15, 30, 4, 12, 9, 20)
+            _ => StableSeries(PulmonaryPressureTrendScenario.NormalStable, days, start, 15, 30, 4, 14, 9, 16)
         };
     }
 
@@ -116,13 +116,15 @@ public sealed class PulmonaryPressureTrendGeneratorService
     {
         var paDiastolic = Clamp(paMean - _random.Next(6, 12), diastolicMin, diastolicMax);
         var paSystolic = Clamp(paDiastolic + ((paMean - paDiastolic) * 3) + Jitter(3), systolicMin, systolicMax);
-        paMean = Clamp(CalculatePaMean(paSystolic, paDiastolic), Math.Min(paMean, paDiastolic), Math.Max(paMean, paSystolic));
+        paMean = PulmonaryPressureGeneratorService.CalculateMean(paSystolic, paDiastolic);
+        var pressure = new PulmonaryPressure(paSystolic, paDiastolic, paMean);
+        PulmonaryPressureGeneratorService.ValidateNotHardStop(pressure);
 
         return new PulmonaryPressureTrendReading(readingDateUtc, paSystolic, paDiastolic, paMean, scenario);
     }
 
     private static int CalculatePaMean(int paSystolic, int paDiastolic) =>
-        (int)Math.Round(paDiastolic + (paSystolic - paDiastolic) / 3.0, MidpointRounding.AwayFromZero);
+        PulmonaryPressureGeneratorService.CalculateMean(paSystolic, paDiastolic);
 
     private int Jitter(int spread) => _random.Next(-spread, spread + 1);
 
@@ -131,7 +133,7 @@ public sealed class PulmonaryPressureTrendGeneratorService
 
 public sealed record PulmonaryPressureTrendReading(
     DateTime ReadingDateUtc,
-    int PaSystolic,
-    int PaDiastolic,
-    int PaMean,
+    int SeatedPaSystolic,
+    int SeatedPaDiastolic,
+    int SeatedPaMean,
     PulmonaryPressureTrendScenario Scenario);
