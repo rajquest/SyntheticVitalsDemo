@@ -1,7 +1,7 @@
 namespace SyntheticVitalsDemo.Api.DTOs;
 
 public sealed record PatientResponse(
-    Guid Id,
+    Guid PatientGuid,
     Guid ClinicId,
     string FirstName,
     string LastName,
@@ -30,8 +30,7 @@ public sealed record UpdatePatientRequest(string FirstName, string LastName, Dat
 public sealed record GeneratePatientsRequest(
     int Count,
     int MalePercentage,
-    string PulmonaryPressureScenario,
-    string PulmonaryPressureTrendScenario,
+    string VitalsTrendScenario,
     int TrendDays,
     string? Scenario = null);
 public sealed record GeneratePatientsResponse(

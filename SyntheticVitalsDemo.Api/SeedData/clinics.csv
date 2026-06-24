@@ -1,0 +1,245 @@
+HospitalName,SiteId
+Mayo Clinic Hospital - Rochester,mCHRO
+Cleveland Clinic,cCLNH
+Massachusetts General Hospital,mMGHB
+Brigham and Women's Hospital,bBWHB
+Johns Hopkins Hospital,jJHHP
+NewYork-Presbyterian Hospital,nNYPH
+UCLA Medical Center,uUCLA
+UCSF Medical Center,uUCSF
+Stanford Health Care - Stanford Hospital,sSHCS
+Cedars-Sinai Medical Center,cCEDR
+Houston Methodist Hospital,hHMTH
+Northwestern Memorial Hospital,nNWTN
+Duke University Hospital,dDUKE
+University of Michigan Health - University Hospital,uUMHU
+Mayo Clinic Hospital - Arizona,mCHAZ
+Mayo Clinic Hospital - Florida,mCHFL
+Barnes-Jewish Hospital,bBJHO
+Mount Sinai Hospital,mMSNH
+NYU Langone Hospitals,nNYUL
+Hospital of the University of Pennsylvania,hHUPE
+Penn Presbyterian Medical Center,pPPMC
+Rush University Medical Center,rRUSH
+University of Chicago Medical Center,uUCHI
+Vanderbilt University Medical Center,vVAND
+Emory University Hospital,eEMRU
+Massachusetts Eye and Ear,mMEYE
+Boston Medical Center,bBMED
+Beth Israel Deaconess Medical Center,bBIDC
+Tufts Medical Center,tTFTS
+Yale New Haven Hospital,yYNHH
+Hartford Hospital,hHART
+Rhode Island Hospital,rRIHO
+Maine Medical Center,mMEMC
+Dartmouth Hitchcock Medical Center,dDHMC
+UVM Medical Center,uUVMC
+Albany Medical Center,aALBA
+Stony Brook University Hospital,sSTNY
+North Shore University Hospital,nNSHU
+Long Island Jewish Medical Center,lLIJM
+Montefiore Medical Center,mMONT
+Mount Sinai West,mMSWE
+Mount Sinai Morningside,mMSMO
+Lenox Hill Hospital,lLENX
+Memorial Sloan Kettering Cancer Center,mMSKC
+Hospital for Special Surgery,hHSSG
+NYC Health + Hospitals/Bellevue,nNYCB
+NYC Health + Hospitals/Kings County,nNYCK
+Jersey Shore University Medical Center,jJSMC
+Hackensack University Medical Center,hHACK
+Morristown Medical Center,mMRTN
+Cooper University Hospital,cCOOP
+Robert Wood Johnson University Hospital,rRWJU
+University Hospital Newark,uUHNW
+Jefferson University Hospital,jJEFF
+Temple University Hospital,tTEMP
+Pennsylvania Hospital,pPAHO
+Geisinger Medical Center,gGEIS
+UPMC Presbyterian,uUPMC
+UPMC Shadyside,uUPMS
+Allegheny General Hospital,aALGH
+Lehigh Valley Hospital - Cedar Crest,lLVHC
+Reading Hospital,rREAD
+Lancaster General Hospital,lLANC
+Christiana Hospital,cCHRS
+Bayhealth Hospital - Kent Campus,bBHKC
+Johns Hopkins Bayview Medical Center,jJHBV
+University of Maryland Medical Center,uUMDC
+MedStar Georgetown University Hospital,mMGTW
+MedStar Washington Hospital Center,mMSTW
+George Washington University Hospital,gGWUH
+Inova Fairfax Hospital,iINOV
+Virginia Hospital Center,vVHCE
+VCU Medical Center,vVCUM
+UVA University Hospital,uUVAU
+Sentara Norfolk General Hospital,sSENT
+Carilion Roanoke Memorial Hospital,cCRLN
+Duke Raleigh Hospital,dDURH
+UNC Hospitals,uUNCH
+Atrium Health Carolinas Medical Center,aATRC
+Novant Health Presbyterian Medical Center,nNOVP
+WakeMed Raleigh Campus,wWAKE
+Moses H. Cone Memorial Hospital,mMHCO
+Prisma Health Greenville Memorial Hospital,rTEST
+MUSC Health University Medical Center,mMUSC
+Roper Hospital,rROPE
+Bon Secours St. Francis Hospital,bBSSF
+Emory Saint Joseph's Hospital,eESJH
+Piedmont Atlanta Hospital,pPIED
+Northside Hospital Atlanta,nNSAT
+Grady Memorial Hospital,gGRAD
+Wellstar Kennestone Hospital,wWELK
+Augusta University Medical Center,aAUGM
+Tampa General Hospital,tTAMG
+AdventHealth Orlando,aADVO
+Orlando Health Orlando Regional Medical Center,oORLH
+UF Health Shands Hospital,uUFHS
+Baptist Hospital of Miami,bBHMI
+Jackson Memorial Hospital,jJMHO
+Cleveland Clinic Weston Hospital,cCCWE
+Sarasota Memorial Hospital,sSARA
+Moffitt Cancer Center,mMOFF
+Mayo Clinic Florida,mMCFL
+UAB Hospital,uUABH
+Huntsville Hospital,hHUNT
+USA Health University Hospital,uUSAH
+Ascension Saint Thomas Hospital,aASTH
+Vanderbilt Wilson County Hospital,vVWCH
+Methodist University Hospital,mMEUH
+Baptist Memorial Hospital-Memphis,bBMHM
+Regional One Health,rRONE
+University of Mississippi Medical Center,uUMSM
+Ochsner Medical Center,oOCHS
+Tulane Medical Center,tTULN
+Baton Rouge General Medical Center,bBRGM
+Our Lady of the Lake Regional Medical Center,oOLOL
+Arkansas Children's Hospital,aARKC
+UAMS Medical Center,uUAMS
+Baptist Health Medical Center-Little Rock,bBHLR
+Baylor University Medical Center,bBAYU
+UT Southwestern Medical Center,uUTSW
+Parkland Health,pPARK
+Texas Health Presbyterian Hospital Dallas,tTHPD
+Houston Methodist Willowbrook Hospital,hHMWB
+Memorial Hermann-Texas Medical Center,mMHTM
+Baylor St. Luke's Medical Center,bBSLK
+MD Anderson Cancer Center,mMDAC
+Texas Children's Hospital,tTXCH
+Ben Taub Hospital,bBNTB
+Dell Seton Medical Center at The University of Texas,dDSMC
+Ascension Seton Medical Center Austin,aASMA
+University Hospital - San Antonio,uUHSA
+Methodist Hospital - San Antonio,mMHSA
+Texas Health Harris Methodist Hospital Fort Worth,tTHHM
+Cook Children's Medical Center,cCOCH
+Oklahoma University Medical Center,oOUMC
+Saint Francis Hospital,sSFHO
+Integris Baptist Medical Center,iINTB
+The University of Kansas Hospital,tUKAH
+Saint Luke's Hospital of Kansas City,sSLHK
+Barnes-Jewish West County Hospital,bBJWC
+Mercy Hospital St. Louis,mMHSL
+SSM Health Saint Louis University Hospital,sSSMH
+Missouri Baptist Medical Center,mMOBM
+University of Iowa Hospitals & Clinics,uUIHC
+MercyOne Des Moines Medical Center,mMODM
+Nebraska Medicine - Nebraska Medical Center,nNMNM
+Bryan Medical Center,bBRYM
+Avera McKennan Hospital & University Health Center,aAVRA
+Sanford USD Medical Center,sSUSM
+Sanford Medical Center Fargo,sSMCF
+Essentia Health-Fargo,eESSF
+Billings Clinic,bBILC
+Logan Health Medical Center,lLOGH
+Boise VA Medical Center,bBOIS
+Saint Alphonsus Regional Medical Center,sSARM
+St. Luke's Boise Medical Center,sSLBM
+University of Utah Hospital,uUUTH
+Intermountain Medical Center,iIMTN
+Primary Children's Hospital,pPRMC
+UCHealth University of Colorado Hospital,uUCHU
+Denver Health Medical Center,dDHMD
+National Jewish Health,nNJWH
+Presbyterian/St. Luke's Medical Center,pPSTL
+Swedish Medical Center - Englewood,sSWMC
+Mayo Clinic Health System - Eau Claire,mMCEC
+University of Wisconsin Hospitals and Clinics,uUWHC
+Froedtert Hospital,fFROE
+Aurora St. Luke's Medical Center,aASLK
+Children's Wisconsin,cCHWI
+Northwestern Medicine Lake Forest Hospital,nNMLF
+Advocate Lutheran General Hospital,aALGE
+Loyola University Medical Center,lLOYU
+Edward Hospital,eEDWH
+Endeavor Health Evanston Hospital,eENDV
+OSF Saint Francis Medical Center,oOSFS
+Carle Foundation Hospital,cCFHO
+IU Health Methodist Hospital,iIUHM
+Indiana University Health University Hospital,iINDU
+Eskenazi Health,eESKH
+Franciscan Health Indianapolis,fFHIN
+Corewell Health William Beaumont University Hospital,cCWBU
+Henry Ford Hospital,hHFRD
+Detroit Receiving Hospital,dDETR
+University of Michigan Health-West,uUMHW
+Spectrum Health Butterworth Hospital,sSpEC
+Ohio State University Wexner Medical Center,oOSUW
+Cleveland Clinic Fairview Hospital,cCCFV
+Cleveland Clinic Hillcrest Hospital,cCCHC
+University Hospitals Cleveland Medical Center,uUHCM
+Cincinnati Children's Hospital Medical Center,cCNCI
+UC Medical Center,uUCMC
+Miami Valley Hospital,mMIAV
+ProMedica Toledo Hospital,pPRMT
+Nationwide Children's Hospital,nNATC
+M Health Fairview University of Minnesota Medical Center,mMFVU
+Mayo Clinic Health System - Mankato,mMCMN
+Abbott Northwestern Hospital,aABNW
+Regions Hospital,rREGH
+Hennepin Healthcare,hHENN
+Seattle Children's Hospital,sSEAC
+UW Medical Center - Montlake,uUWMC
+Harborview Medical Center,hHARB
+Virginia Mason Medical Center,vVMAS
+Providence Sacred Heart Medical Center,pPSHM
+Oregon Health & Science University Hospital,oORSU
+Legacy Emanuel Medical Center,lLEGE
+Providence St. Vincent Medical Center,pPSVM
+Asante Rogue Regional Medical Center,aAROG
+Saint Alphonsus Medical Center - Nampa,sSAMN
+Renown Regional Medical Center,rRENW
+Sunrise Hospital and Medical Center,sSUNR
+University Medical Center of Southern Nevada,uUMSN
+Banner - University Medical Center Phoenix,bBUMP
+Mayo Clinic Hospital - Phoenix,mMCPX
+HonorHealth Scottsdale Shea Medical Center,hHSSM
+St. Joseph's Hospital and Medical Center,sSTJH
+Phoenix Children's Hospital,pPHXC
+Banner - University Medical Center Tucson,bBUMT
+University of New Mexico Hospital,uUNMH
+Presbyterian Hospital,pPRBH
+Lovelace Medical Center,lLOVE
+Cedars-Sinai Marina del Rey Hospital,cCMDR
+Keck Hospital of USC,kKUSC
+LAC+USC Medical Center,lLUSC
+Huntington Hospital,hHUNG
+Hoag Hospital Newport Beach,hHOAG
+UCI Medical Center,uUCIM
+Scripps Memorial Hospital La Jolla,sSMLJ
+Sharp Memorial Hospital,sSHAR
+Rady Children's Hospital - San Diego,rRCSD
+Kaiser Permanente Los Angeles Medical Center,kKPLA
+California Pacific Medical Center,cCPMC
+Zuckerberg San Francisco General Hospital,zZSFG
+Santa Clara Valley Medical Center,sSCVM
+Kaiser Permanente Oakland Medical Center,kKPOK
+UC Davis Medical Center,uUCDV
+Sutter Medical Center Sacramento,sSMCS
+Kaiser Permanente Roseville Medical Center,kKPRV
+Community Regional Medical Center,cCRMC
+Adventist Health Bakersfield,aADHB
+Kapiolani Medical Center for Women & Children,kKAPM
+The Queen's Medical Center,tQNMC
+Alaska Native Medical Center,aANMC
+Providence Alaska Medical Center,pPRAK

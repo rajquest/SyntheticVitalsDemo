@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using SyntheticVitalsDemo.Api.DTOs;
+using SyntheticVitalsDemo.Api.Models;
 using SyntheticVitalsDemo.Api.Services;
 
 namespace SyntheticVitalsDemo.Api.Controllers;
@@ -25,10 +26,10 @@ public sealed class VitalsController(VitalsService vitals) : ControllerBase
     [HttpPost("generate-vitals-series")]
     public async Task<ActionResult<IReadOnlyList<VitalsSubmissionResponse>>> GenerateSeries(Guid patientId, GenerateVitalsSeriesRequest request)
     {
-        if (request.Days is not (7 or 14 or 30 or 60 or 180 or 365)) return ValidationProblem("Days must be 7, 14, 30, 60, 180, or 365.");
-        if (!Validation.TryParsePulmonaryPressureTrendScenario(request.PulmonaryPressureScenario, out _))
+        if (request.Days is not (2 or 7 or 14 or 30 or 60 or 180 or 365)) return ValidationProblem("Days must be 2, 7, 14, 30, 60, 180, or 365.");
+        if (!Validation.TryParseVitalsTrendScenario(request.VitalsTrendScenario, out _))
         {
-            return ValidationProblem("Pulmonary artery pressure trend is required.");
+            return ValidationProblem($"Vitals trend scenario must be one of: {string.Join(", ", Enum.GetNames<VitalsTrendScenario>())}.");
         }
 
         var generated = await vitals.GenerateSeriesAsync(patientId, request);

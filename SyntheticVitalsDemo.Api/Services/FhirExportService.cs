@@ -1,17 +1,22 @@
 using System.Globalization;
 using System.Text.Json;
+using Hl7.Fhir.Model;
+using Hl7.Fhir.Serialization;
 using Microsoft.EntityFrameworkCore;
 using SyntheticVitalsDemo.Api.Data;
-using SyntheticVitalsDemo.Api.Models;
+using DomainPatient = SyntheticVitalsDemo.Api.Models.Patient;
+using DomainVitals = SyntheticVitalsDemo.Api.Models.VitalsSubmission;
 
 namespace SyntheticVitalsDemo.Api.Services;
 
 public sealed class FhirExportService(AppDbContext db)
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        WriteIndented = true
-    };
+    private static readonly FhirJsonSerializer Serializer = new();
+    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
+
+    private const string LoincSystem    = "http://loinc.org";
+    private const string UcumSystem     = "http://unitsofmeasure.org";
+    private const string ObsCatSystem   = "http://terminology.hl7.org/CodeSystem/observation-category";
 
     public async Task<string?> ExportVitalsSubmissionAsync(Guid id)
     {
@@ -19,152 +24,117 @@ public sealed class FhirExportService(AppDbContext db)
             .Include(x => x.Patient)!.ThenInclude(x => x!.Clinic)
             .FirstOrDefaultAsync(x => x.Id == id);
 
-        return vitals is null ? null : JsonSerializer.Serialize(BuildBundle(vitals), JsonOptions);
+        if (vitals is null) return null;
+        var raw = Serializer.SerializeToString(BuildBundle(vitals));
+        using var doc = JsonDocument.Parse(raw);
+        return JsonSerializer.Serialize(doc.RootElement, JsonOptions);
     }
 
-    private static object BuildBundle(VitalsSubmission vitals)
+    private static Bundle BuildBundle(DomainVitals vitals)
     {
-        var patient = vitals.Patient;
-        var patientId = patient?.Id ?? vitals.PatientId;
-        var effectiveDateTime = vitals.SubmittedAtUtc.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture);
+        var patient   = vitals.Patient;
+        var patientId = (patient?.PatientGuid ?? vitals.PatientId).ToString();
+        var effective = new DateTimeOffset(vitals.SubmittedAtUtc, TimeSpan.Zero);
 
-        return new
+        var bundle = new Bundle
         {
-            resourceType = "Bundle",
-            id = vitals.Id.ToString(),
-            type = "collection",
-            timestamp = effectiveDateTime,
-            entry = new object[]
-            {
-                new { fullUrl = $"urn:synthetic-vitals:patient:{patientId}", resource = BuildPatient(patient, patientId) },
-                BuildObservationEntry(vitals.Id, patientId, "systolic-bp", VitalLoincCodes.SystolicBp, VitalLoincDisplays.SystolicBp, vitals.SystolicBp, UcumUnits.MmHg, effectiveDateTime),
-                BuildObservationEntry(vitals.Id, patientId, "diastolic-bp", VitalLoincCodes.DiastolicBp, VitalLoincDisplays.DiastolicBp, vitals.DiastolicBp, UcumUnits.MmHg, effectiveDateTime),
-                BuildObservationEntry(vitals.Id, patientId, "spo2", VitalLoincCodes.Spo2, VitalLoincDisplays.Spo2, vitals.Spo2, UcumUnits.Percent, effectiveDateTime),
-                BuildObservationEntry(vitals.Id, patientId, "heart-rate", VitalLoincCodes.HeartRate, VitalLoincDisplays.HeartRate, vitals.HeartRate, UcumUnits.PerMinute, effectiveDateTime),
-                BuildObservationEntry(vitals.Id, patientId, "body-weight", VitalLoincCodes.BodyWeight, VitalLoincDisplays.BodyWeight, vitals.WeightLbs, UcumUnits.Pounds, effectiveDateTime),
-                BuildPulmonaryObservationEntry(vitals.Id, patientId, "seated-pa-systolic", VitalLoincCodes.PulmonaryArterySystolic, VitalLoincDisplays.PulmonaryArterySystolic, vitals.SeatedPaSystolic, BodyPositionCodes.SittingCode, BodyPositionCodes.SittingDisplay, effectiveDateTime),
-                BuildPulmonaryObservationEntry(vitals.Id, patientId, "seated-pa-diastolic", VitalLoincCodes.PulmonaryArteryDiastolic, VitalLoincDisplays.PulmonaryArteryDiastolic, vitals.SeatedPaDiastolic, BodyPositionCodes.SittingCode, BodyPositionCodes.SittingDisplay, effectiveDateTime),
-                BuildPulmonaryObservationEntry(vitals.Id, patientId, "seated-pa-mean", VitalLoincCodes.PulmonaryArteryMean, VitalLoincDisplays.PulmonaryArteryMean, vitals.SeatedPaMean, BodyPositionCodes.SittingCode, BodyPositionCodes.SittingDisplay, effectiveDateTime),
-                BuildPulmonaryObservationEntry(vitals.Id, patientId, "supine-pa-systolic", VitalLoincCodes.PulmonaryArterySystolic, VitalLoincDisplays.PulmonaryArterySystolic, vitals.SupinePaSystolic, BodyPositionCodes.SupineCode, BodyPositionCodes.SupineDisplay, effectiveDateTime),
-                BuildPulmonaryObservationEntry(vitals.Id, patientId, "supine-pa-diastolic", VitalLoincCodes.PulmonaryArteryDiastolic, VitalLoincDisplays.PulmonaryArteryDiastolic, vitals.SupinePaDiastolic, BodyPositionCodes.SupineCode, BodyPositionCodes.SupineDisplay, effectiveDateTime),
-                BuildPulmonaryObservationEntry(vitals.Id, patientId, "supine-pa-mean", VitalLoincCodes.PulmonaryArteryMean, VitalLoincDisplays.PulmonaryArteryMean, vitals.SupinePaMean, BodyPositionCodes.SupineCode, BodyPositionCodes.SupineDisplay, effectiveDateTime)
-            }
+            Id               = vitals.Id.ToString(),
+            Type             = Bundle.BundleType.Collection,
+            TimestampElement = new Instant(effective)
         };
+
+        bundle.Entry.Add(ToEntry($"urn:synthetic-vitals:patient:{patientId}", BuildPatient(patient, patientId)));
+
+        bundle.Entry.Add(ObsEntry(vitals.Id, patientId, "systolic-bp",       VitalLoincCodes.SystolicBp,           VitalLoincDisplays.SystolicBp,           vitals.SystolicBp,   UcumUnits.MmHg,      effective));
+        bundle.Entry.Add(ObsEntry(vitals.Id, patientId, "diastolic-bp",      VitalLoincCodes.DiastolicBp,          VitalLoincDisplays.DiastolicBp,          vitals.DiastolicBp,  UcumUnits.MmHg,      effective));
+        bundle.Entry.Add(ObsEntry(vitals.Id, patientId, "spo2",              VitalLoincCodes.Spo2,                 VitalLoincDisplays.Spo2,                 vitals.Spo2,         UcumUnits.Percent,   effective));
+        bundle.Entry.Add(ObsEntry(vitals.Id, patientId, "heart-rate",        VitalLoincCodes.HeartRate,            VitalLoincDisplays.HeartRate,            vitals.HeartRate,    UcumUnits.PerMinute, effective));
+        bundle.Entry.Add(ObsEntry(vitals.Id, patientId, "body-weight",       VitalLoincCodes.BodyWeight,           VitalLoincDisplays.BodyWeight,           (int)vitals.WeightLbs, UcumUnits.Pounds,  effective));
+
+        bundle.Entry.Add(PaObsEntry(vitals.Id, patientId, "seated-pa-systolic",  VitalLoincCodes.PulmonaryArterySystolic,  VitalLoincDisplays.PulmonaryArterySystolic,  vitals.SeatedPaSystolic,  BodyPositionCodes.SittingCode, BodyPositionCodes.SittingDisplay, effective));
+        bundle.Entry.Add(PaObsEntry(vitals.Id, patientId, "seated-pa-diastolic", VitalLoincCodes.PulmonaryArteryDiastolic, VitalLoincDisplays.PulmonaryArteryDiastolic, vitals.SeatedPaDiastolic, BodyPositionCodes.SittingCode, BodyPositionCodes.SittingDisplay, effective));
+        bundle.Entry.Add(PaObsEntry(vitals.Id, patientId, "seated-pa-mean",      VitalLoincCodes.PulmonaryArteryMean,      VitalLoincDisplays.PulmonaryArteryMean,      vitals.SeatedPaMean,      BodyPositionCodes.SittingCode, BodyPositionCodes.SittingDisplay, effective));
+        bundle.Entry.Add(PaObsEntry(vitals.Id, patientId, "supine-pa-systolic",  VitalLoincCodes.PulmonaryArterySystolic,  VitalLoincDisplays.PulmonaryArterySystolic,  vitals.SupinePaSystolic,  BodyPositionCodes.SupineCode,  BodyPositionCodes.SupineDisplay,  effective));
+        bundle.Entry.Add(PaObsEntry(vitals.Id, patientId, "supine-pa-diastolic", VitalLoincCodes.PulmonaryArteryDiastolic, VitalLoincDisplays.PulmonaryArteryDiastolic, vitals.SupinePaDiastolic, BodyPositionCodes.SupineCode,  BodyPositionCodes.SupineDisplay,  effective));
+        bundle.Entry.Add(PaObsEntry(vitals.Id, patientId, "supine-pa-mean",      VitalLoincCodes.PulmonaryArteryMean,      VitalLoincDisplays.PulmonaryArteryMean,      vitals.SupinePaMean,      BodyPositionCodes.SupineCode,  BodyPositionCodes.SupineDisplay,  effective));
+
+        return bundle;
     }
 
-    private static object BuildPatient(Patient? patient, Guid patientId) =>
-        new
+    private static Patient BuildPatient(DomainPatient? patient, string patientId) =>
+        new()
         {
-            resourceType = "Patient",
-            id = patientId.ToString(),
-            name = new[]
+            Id   = patientId,
+            Name = [new HumanName
             {
-                new
-                {
-                    family = patient?.LastName ?? string.Empty,
-                    given = new[] { patient?.FirstName ?? string.Empty }
-                }
-            },
-            birthDate = patient?.DateOfBirth.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
+                Family = patient?.LastName ?? string.Empty,
+                Given  = [patient?.FirstName ?? string.Empty]
+            }],
+            BirthDateElement = patient is not null
+                ? new Date(patient.DateOfBirth.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture))
+                : null
         };
 
-    private static object BuildObservationEntry(Guid submissionId, Guid patientId, string suffix, string loincCode, string display, decimal value, string unit, string effectiveDateTime) =>
-        new
-        {
-            fullUrl = $"urn:synthetic-vitals:observation:{submissionId}:{suffix}",
-            resource = BuildObservation(submissionId, patientId, suffix, loincCode, display, value, unit, effectiveDateTime)
-        };
-
-    private static object BuildPulmonaryObservationEntry(Guid submissionId, Guid patientId, string suffix, string loincCode, string display, int value, string positionCode, string positionDisplay, string effectiveDateTime) =>
-        new
-        {
-            fullUrl = $"urn:synthetic-vitals:observation:{submissionId}:{suffix}",
-            resource = BuildObservation(
-                submissionId,
-                patientId,
-                suffix,
-                loincCode,
-                display,
-                value,
-                UcumUnits.MmHg,
-                effectiveDateTime,
-                positionCode,
-                positionDisplay)
-        };
-
-    private static object BuildObservation(
-        Guid submissionId,
-        Guid patientId,
-        string suffix,
-        string loincCode,
-        string display,
-        decimal value,
-        string unit,
-        string effectiveDateTime,
-        string? positionCode = null,
-        string? positionDisplay = null)
-    {
-        var observation = new Dictionary<string, object?>
-        {
-            ["resourceType"] = "Observation",
-            ["id"] = $"{submissionId}-{suffix}",
-            ["status"] = "final",
-            ["category"] = new[]
+    private static Bundle.EntryComponent ObsEntry(
+        Guid submissionId, string patientId, string suffix,
+        string loincCode, string display,
+        int value, string ucumCode, DateTimeOffset effective) =>
+        ToEntry(
+            $"urn:synthetic-vitals:observation:{submissionId}:{suffix}",
+            new Observation
             {
-                new
-                {
-                    coding = new[]
+                Id       = $"{submissionId}-{suffix}",
+                Status   = ObservationStatus.Final,
+                Category = VitalSignsCategory(),
+                Code     = LoincConcept(loincCode, display),
+                Subject  = new ResourceReference($"Patient/{patientId}"),
+                Effective = new FhirDateTime(effective),
+                Value    = UcumQuantity(value, ucumCode)
+            });
+
+    private static Bundle.EntryComponent PaObsEntry(
+        Guid submissionId, string patientId, string suffix,
+        string loincCode, string display,
+        int value, string positionCode, string positionDisplay, DateTimeOffset effective) =>
+        ToEntry(
+            $"urn:synthetic-vitals:observation:{submissionId}:{suffix}",
+            new Observation
+            {
+                Id        = $"{submissionId}-{suffix}",
+                Status    = ObservationStatus.Final,
+                Category  = VitalSignsCategory(),
+                Code      = LoincConcept(loincCode, display),
+                Subject   = new ResourceReference($"Patient/{patientId}"),
+                Effective = new FhirDateTime(effective),
+                Value     = UcumQuantity(value, UcumUnits.MmHg),
+                Component =
+                [
+                    new Observation.ComponentComponent
                     {
-                        new
-                        {
-                            system = "http://terminology.hl7.org/CodeSystem/observation-category",
-                            code = "vital-signs",
-                            display = "Vital Signs"
-                        }
+                        Code  = LoincConcept(VitalLoincCodes.BodyPosition, VitalLoincDisplays.BodyPosition),
+                        Value = LoincConcept(positionCode, positionDisplay)
                     }
-                }
-            },
-            ["code"] = Coding(loincCode, display),
-            ["subject"] = new { reference = $"Patient/{patientId}" },
-            ["effectiveDateTime"] = effectiveDateTime,
-            ["valueQuantity"] = new
-            {
-                value,
-                unit,
-                system = "http://unitsofmeasure.org",
-                code = unit
-            }
-        };
+                ]
+            });
 
-        if (positionCode is not null && positionDisplay is not null)
+    private static Bundle.EntryComponent ToEntry(string fullUrl, Resource resource) =>
+        new() { FullUrl = fullUrl, Resource = resource };
+
+    private static List<CodeableConcept> VitalSignsCategory() =>
+    [
+        new CodeableConcept
         {
-            observation["component"] = new[]
-            {
-                new
-                {
-                    code = Coding(VitalLoincCodes.BodyPosition, VitalLoincDisplays.BodyPosition),
-                    valueCodeableConcept = Coding(positionCode, positionDisplay)
-                }
-            };
+            Coding = [new Coding { System = ObsCatSystem, Code = "vital-signs", Display = "Vital Signs" }]
         }
+    ];
 
-        return observation;
-    }
-
-    private static object Coding(string code, string display) =>
-        new
+    private static CodeableConcept LoincConcept(string code, string display) =>
+        new()
         {
-            coding = new[]
-            {
-                new
-                {
-                    system = code.StartsWith("LA", StringComparison.OrdinalIgnoreCase)
-                        ? "http://loinc.org"
-                        : "http://loinc.org",
-                    code,
-                    display
-                }
-            },
-            text = display
+            Coding = [new Coding { System = LoincSystem, Code = code, Display = display }],
+            Text   = display
         };
+
+    private static Quantity UcumQuantity(decimal value, string ucumCode) =>
+        new() { Value = value, System = UcumSystem, Code = ucumCode };
 }

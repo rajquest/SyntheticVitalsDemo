@@ -21,6 +21,21 @@ public static class Validation
     public static bool TryParsePulmonaryPressureTrendScenario(string value, out PulmonaryPressureTrendScenario scenario) =>
         Enum.TryParse(value, ignoreCase: true, out scenario) && Enum.IsDefined(scenario);
 
+    public static bool TryParseVitalsTrendScenario(string value, out VitalsTrendScenario scenario) =>
+        Enum.TryParse(value, ignoreCase: true, out scenario) && Enum.IsDefined(scenario);
+
+    public static PatientScenario ResolvePatientScenarioFromVitalsTrend(VitalsTrendScenario scenario) =>
+        scenario switch
+        {
+            VitalsTrendScenario.NormalStable              => PatientScenario.NormalPaPressure,
+            VitalsTrendScenario.ChronicHfStable           => PatientScenario.ModeratePulmonaryHypertension,
+            VitalsTrendScenario.EarlyFluidOverload        => PatientScenario.ElevatedPaPressure,
+            VitalsTrendScenario.AcuteHfDecompensation     => PatientScenario.SeverePulmonaryHypertension,
+            VitalsTrendScenario.DiuresisTreatmentResponse => PatientScenario.ModeratePulmonaryHypertension,
+            VitalsTrendScenario.ExerciseActivitySpike     => PatientScenario.ElevatedPaPressure,
+            _                                             => PatientScenario.NormalPaPressure
+        };
+
     public static bool TryParseSex(string value, out Sex sex) =>
         Enum.TryParse(value, ignoreCase: true, out sex) && Enum.IsDefined(sex);
 

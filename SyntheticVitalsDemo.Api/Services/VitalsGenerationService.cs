@@ -30,25 +30,42 @@ public sealed class VitalsGenerationService(
         DateTime endDateUtc,
         PulmonaryPressureTrendScenario trendScenario)
     {
+        // Delegate to the VitalsTrendScenario overload via the generator's own mapping.
+        var pressureReadings = pressureTrendGenerator.Generate(trendScenario, days, endDateUtc);
+        return BuildSeriesFromReadings(patient, pressureReadings);
+    }
+
+    public IReadOnlyList<VitalsSubmission> GenerateSeries(
+        Patient patient,
+        int days,
+        DateTime endDateUtc,
+        VitalsTrendScenario trendScenario)
+    {
         days = Math.Clamp(days, 1, 365);
         var pressureReadings = pressureTrendGenerator.Generate(trendScenario, days, endDateUtc);
+        return BuildSeriesFromReadings(patient, pressureReadings);
+    }
 
+    private IReadOnlyList<VitalsSubmission> BuildSeriesFromReadings(
+        Patient patient,
+        IReadOnlyList<PulmonaryPressureTrendReading> pressureReadings)
+    {
         return pressureReadings
             .Select((pressure, index) =>
             {
                 var vitals = Generate(patient, pressure.ReadingDateUtc, index, pressureReadings.Count);
-                vitals.SeatedPaSystolic = pressure.SeatedPaSystolic;
+                vitals.SeatedPaSystolic  = pressure.SeatedPaSystolic;
                 vitals.SeatedPaDiastolic = pressure.SeatedPaDiastolic;
-                vitals.SeatedPaMean = pressure.SeatedPaMean;
-                var supinePressure = pressureGenerator.GenerateSupineFromSeated(new PulmonaryPressure(
+                vitals.SeatedPaMean      = pressure.SeatedPaMean;
+                var supine = pressureGenerator.GenerateSupineFromSeated(new PulmonaryPressure(
                     pressure.SeatedPaSystolic,
                     pressure.SeatedPaDiastolic,
                     pressure.SeatedPaMean));
-                vitals.SupinePaSystolic = supinePressure.Systolic;
-                vitals.SupinePaDiastolic = supinePressure.Diastolic;
-                vitals.SupinePaMean = supinePressure.Mean;
-                vitals.TrendScenario = trendScenario;
-                vitals.Notes = $"Synthetic PA pressure trend: {trendScenario}.";
+                vitals.SupinePaSystolic  = supine.Systolic;
+                vitals.SupinePaDiastolic = supine.Diastolic;
+                vitals.SupinePaMean      = supine.Mean;
+                vitals.TrendScenario     = pressure.Scenario;
+                vitals.Notes             = $"Synthetic PA pressure trend: {pressure.Scenario}.";
                 return vitals;
             })
             .ToArray();
@@ -57,7 +74,7 @@ public sealed class VitalsGenerationService(
     public VitalsSubmission Generate(Patient patient, DateTime submittedAtUtc, int index = 0, int total = 1)
     {
         var progress = total <= 1 ? 0m : index / (decimal)(total - 1);
-        var baselineWeight = 150m + StableOffset(patient.Id, 0, 75);
+        var baselineWeight = 150m + StableOffset(patient.PatientGuid, 0, 75);
         var trend = patient.Scenario switch
         {
             PatientScenario.HeartFailureWorsening => progress,
@@ -115,7 +132,7 @@ public sealed class VitalsGenerationService(
 
         return new VitalsSubmission
         {
-            PatientId = patient.Id,
+            PatientId = patient.PatientGuid,
             SubmittedAtUtc = DateTime.SpecifyKind(submittedAtUtc, DateTimeKind.Utc),
             SystolicBp = Clamp(bp.Sys + Jitter(5), 70, 220),
             DiastolicBp = Clamp(bp.Dia + Jitter(4), 40, 130),
@@ -129,7 +146,7 @@ public sealed class VitalsGenerationService(
             SupinePaDiastolic = pa.Supine.Diastolic,
             SupinePaMean = pa.Supine.Mean,
             Scenario = patient.Scenario,
-            TrendScenario = PulmonaryPressureTrendScenario.NormalStable,
+            TrendScenario = VitalsTrendScenario.NormalStable,
             Notes = patient.Scenario == PatientScenario.LowSpo2Episode && lowSpo2Episode
                 ? "Synthetic low SpO2 episode for demo purposes."
                 : "Synthetic demo vitals."

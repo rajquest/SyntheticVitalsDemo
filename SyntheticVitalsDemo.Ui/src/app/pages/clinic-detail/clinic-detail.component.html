@@ -26,18 +26,9 @@
     </div>
 
     <mat-form-field appearance="outline">
-      <mat-label>PA pressure scenario</mat-label>
-      <mat-select [(ngModel)]="addPatientsForm.pulmonaryPressureScenario" required>
-        @for (scenario of pulmonaryPressureScenarios; track scenario.value) {
-          <mat-option [value]="scenario.value">{{ scenario.label }}</mat-option>
-        }
-      </mat-select>
-    </mat-form-field>
-
-    <mat-form-field appearance="outline">
-      <mat-label>PA pressure trend</mat-label>
-      <mat-select [(ngModel)]="addPatientsForm.pulmonaryPressureTrendScenario" required>
-        @for (scenario of pulmonaryPressureTrendScenarios; track scenario.value) {
+      <mat-label>Vitals Trend Scenario</mat-label>
+      <mat-select [(ngModel)]="addPatientsForm.trendScenario" required>
+        @for (scenario of trendScenarioOptions; track scenario.value) {
           <mat-option [value]="scenario.value">{{ scenario.label }}</mat-option>
         }
       </mat-select>
@@ -97,15 +88,15 @@
           </tr>
         </thead>
         <tbody>
-          @for (patient of patients(); track patient.id) {
+          @for (patient of patients(); track patient.patientGuid) {
             <tr>
               <td class="select-cell">
                 <mat-checkbox
                   [attr.aria-label]="'Select ' + patient.firstName + ' ' + patient.lastName"
-                  [checked]="selectedPatientIds().has(patient.id)"
-                  (change)="togglePatient(patient.id, $event.checked)" />
+                  [checked]="selectedPatientIds().has(patient.patientGuid)"
+                  (change)="togglePatient(patient.patientGuid, $event.checked)" />
               </td>
-              <td><a [routerLink]="['/patients', patient.id]">{{ patient.firstName }} {{ patient.lastName }}</a></td>
+              <td><a [routerLink]="['/patients', patient.patientGuid]">{{ patient.firstName }} {{ patient.lastName }}</a></td>
               <td>{{ patient.dateOfBirth }}</td>
               <td>{{ patient.sex }}</td>
               <td>{{ patient.bloodPressureDisplay }}</td>

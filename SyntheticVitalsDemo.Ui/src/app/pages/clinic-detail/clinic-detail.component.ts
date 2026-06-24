@@ -11,7 +11,7 @@ import { MatSliderModule } from '@angular/material/slider';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { ApiService } from '../../core/api.service';
-import { Clinic, Patient, pulmonaryPressureScenarios, pulmonaryPressureTrendScenarios } from '../../core/models';
+import { Clinic, Patient, TrendScenarioOption, trendScenarioOptions } from '../../core/models';
 
 @Component({
   selector: 'app-clinic-detail',
@@ -39,13 +39,11 @@ export class ClinicDetailComponent implements OnInit {
   error = signal<string | null>(null);
   countOptions = [1, 5, 10, 25, 50, 100] as const;
   trendDayOptions = [1, 7, 14, 30, 60, 180, 365] as const;
-  pulmonaryPressureScenarios = pulmonaryPressureScenarios;
-  pulmonaryPressureTrendScenarios = pulmonaryPressureTrendScenarios;
+  trendScenarioOptions: TrendScenarioOption[] = trendScenarioOptions;
   addPatientsForm = {
     count: 10 as 1 | 5 | 10 | 25 | 50 | 100,
     malePercentage: 50,
-    pulmonaryPressureScenario: 'NormalPaPressure',
-    pulmonaryPressureTrendScenario: 'NormalStable',
+    trendScenario: 'NormalStable',
     trendDays: 14
   };
 
@@ -87,7 +85,7 @@ export class ClinicDetailComponent implements OnInit {
 
   allPatientsSelected(): boolean {
     const patients = this.patients();
-    return patients.length > 0 && patients.every(patient => this.selectedPatientIds().has(patient.id));
+    return patients.length > 0 && patients.every(patient => this.selectedPatientIds().has(patient.patientGuid));
   }
 
   somePatientsSelected(): boolean {
@@ -96,7 +94,7 @@ export class ClinicDetailComponent implements OnInit {
   }
 
   toggleAllPatients(checked: boolean): void {
-    this.selectedPatientIds.set(checked ? new Set(this.patients().map(patient => patient.id)) : new Set());
+    this.selectedPatientIds.set(checked ? new Set(this.patients().map(patient => patient.patientGuid)) : new Set());
   }
 
   togglePatient(patientId: string, checked: boolean): void {
@@ -119,12 +117,8 @@ export class ClinicDetailComponent implements OnInit {
       this.error.set('Gender mix must be between 0 and 100.');
       return;
     }
-    if (!this.addPatientsForm.pulmonaryPressureScenario) {
-      this.error.set('Pulmonary artery pressure scenario is required.');
-      return;
-    }
-    if (!this.addPatientsForm.pulmonaryPressureTrendScenario) {
-      this.error.set('Pulmonary artery pressure trend is required.');
+    if (!this.addPatientsForm.trendScenario) {
+      this.error.set('Vitals trend scenario is required.');
       return;
     }
     if (![1, 7, 14, 30, 60, 180, 365].includes(this.addPatientsForm.trendDays)) {
@@ -134,7 +128,12 @@ export class ClinicDetailComponent implements OnInit {
 
     this.generating.set(true);
     this.error.set(null);
-    this.api.generatePatients(this.clinicId, this.addPatientsForm).subscribe({
+    this.api.generatePatients(this.clinicId, {
+      count: this.addPatientsForm.count,
+      malePercentage: this.addPatientsForm.malePercentage,
+      vitalsTrendScenario: this.addPatientsForm.trendScenario,
+      trendDays: this.addPatientsForm.trendDays
+    }).subscribe({
       next: response => {
         this.patients.set(response.patients);
         const clinic = this.clinic();

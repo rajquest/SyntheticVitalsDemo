@@ -1,16 +1,15 @@
 using SyntheticVitalsDemo.Api.DTOs;
 using SyntheticVitalsDemo.Api.Models;
-
 namespace SyntheticVitalsDemo.Api.Services;
 
 public static class MappingExtensions
 {
     public static ClinicResponse ToResponse(this Clinic clinic) =>
-        new(clinic.Id, clinic.Name, clinic.CreatedAtUtc, clinic.Patients.Count, clinic.Patients.Sum(patient => patient.VitalsSubmissions.Count));
+        new(clinic.Id, clinic.Name, clinic.SiteId, clinic.CreatedAtUtc, clinic.Patients.Count, clinic.Patients.Sum(patient => patient.VitalsSubmissions.Count));
 
     public static PatientResponse ToResponse(this Patient patient) =>
         new(
-            patient.Id,
+            patient.PatientGuid,
             patient.ClinicId,
             patient.FirstName,
             patient.LastName,
@@ -33,6 +32,19 @@ public static class MappingExtensions
             patient.SupinePulmonaryPressureDisplay,
             patient.CreatedAtUtc,
             patient.VitalsSubmissions.Count);
+
+    public static DeviceResponse ToResponse(this Device device) =>
+        new(device.DeviceType,
+            device.DeviceId,
+            device.ImeiNumber,
+            device.BluetoothAddress,
+            device.DateTimeCreated,
+            device.DateTimeLastUpdated,
+            device.DateTimeDeactivated,
+            device.DateTimePatientAssigned,
+            device.PatientGuid,
+            device.DateTimeDeactivated == null,
+            device.PatientGuid != null);
 
     public static VitalsSubmissionResponse ToResponse(this VitalsSubmission vitals) =>
         new(

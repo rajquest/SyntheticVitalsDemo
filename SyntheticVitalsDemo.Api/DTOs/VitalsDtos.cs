@@ -22,4 +22,4 @@ public sealed record VitalsSubmissionResponse(
     string? Notes);
 
 public sealed record GenerateVitalsRequest(DateTime? SubmittedAtUtc);
-public sealed record GenerateVitalsSeriesRequest(int Days, DateTime? EndDateUtc, bool ReplaceExisting, string PulmonaryPressureScenario);
+public sealed record GenerateVitalsSeriesRequest(int Days, DateTime? EndDateUtc, bool ReplaceExisting, string VitalsTrendScenario);

@@ -20,6 +20,6 @@ public sealed class VitalsSubmission
     public string SeatedPulmonaryPressureDisplay => $"{SeatedPaSystolic} / {SeatedPaDiastolic} ({SeatedPaMean})";
     public string SupinePulmonaryPressureDisplay => $"{SupinePaSystolic} / {SupinePaDiastolic} ({SupinePaMean})";
     public PatientScenario Scenario { get; set; }
-    public PulmonaryPressureTrendScenario TrendScenario { get; set; } = PulmonaryPressureTrendScenario.NormalStable;
+    public VitalsTrendScenario TrendScenario { get; set; } = VitalsTrendScenario.NormalStable;
     public string? Notes { get; set; }
 }

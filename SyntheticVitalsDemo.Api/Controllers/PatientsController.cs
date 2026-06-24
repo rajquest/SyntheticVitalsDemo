@@ -33,7 +33,7 @@ public sealed class PatientsController(PatientService patients) : ControllerBase
         if (error is not null) return ValidationProblem(error);
 
         var patient = await patients.CreateAsync(clinicId, request);
-        return patient is null ? NotFound() : CreatedAtAction(nameof(Get), new { patientId = patient.Id }, patient);
+        return patient is null ? NotFound() : CreatedAtAction(nameof(Get), new { patientId = patient.PatientGuid }, patient);
     }
 
     [HttpPost("api/clinics/{clinicId:guid}/patients/generate")]
@@ -42,14 +42,9 @@ public sealed class PatientsController(PatientService patients) : ControllerBase
         if (clinicId == Guid.Empty) return ValidationProblem("Clinic is required.");
         if (request.Count is not (1 or 5 or 10 or 25 or 50 or 100)) return ValidationProblem("Count must be 1, 5, 10, 25, 50, or 100.");
         if (request.MalePercentage is < 0 or > 100) return ValidationProblem("Male percentage must be between 0 and 100.");
-        if (!Validation.TryParseScenario(request.PulmonaryPressureScenario, out var pulmonaryPressureScenario) ||
-            !Validation.PulmonaryPressureScenarios.Contains(pulmonaryPressureScenario))
+        if (!Validation.TryParseVitalsTrendScenario(request.VitalsTrendScenario, out _))
         {
-            return ValidationProblem($"Pulmonary artery pressure scenario must be one of: {string.Join(", ", Validation.PulmonaryPressureScenarios)}.");
-        }
-        if (!Validation.TryParsePulmonaryPressureTrendScenario(request.PulmonaryPressureTrendScenario, out _))
-        {
-            return ValidationProblem($"Pulmonary artery pressure trend must be one of: {string.Join(", ", Enum.GetNames<PulmonaryPressureTrendScenario>())}.");
+            return ValidationProblem($"Vitals trend scenario must be one of: {string.Join(", ", Enum.GetNames<VitalsTrendScenario>())}.");
         }
         if (request.TrendDays is not (1 or 7 or 14 or 30 or 60 or 180 or 365)) return ValidationProblem("Trend readings must be 1, 7, 14, 30, 60, 180, or 365.");
 

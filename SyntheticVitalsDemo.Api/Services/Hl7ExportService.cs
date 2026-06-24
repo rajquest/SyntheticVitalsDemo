@@ -19,16 +19,20 @@ public sealed class Hl7ExportService(AppDbContext db)
     private static string BuildMessage(VitalsSubmission vitals)
     {
         var patient = vitals.Patient;
-        var clinic = patient?.Clinic?.Name ?? "SyntheticVitalsDemo";
+        var clinic = patient?.Clinic;
+        var clinicName = clinic?.Name ?? "SyntheticVitalsDemo";
+        var receivingFacility = string.IsNullOrWhiteSpace(clinic?.SiteId)
+            ? clinicName
+            : $"{clinicName}^{clinic.SiteId}";
         var submittedAt = vitals.SubmittedAtUtc.ToUniversalTime().ToString("yyyyMMddHHmmss");
         var messageControlId = vitals.Id.ToString("N");
 
         var message = new Message();
         message.AddSegmentMSH(
             "SyntheticVitalsDemo",
-            clinic,
+            "Edwards Lifesciences",
             "SyntheticVitalsDemo",
-            "SyntheticVitalsDemo",
+            receivingFacility,
             string.Empty,
             "ORU^R01",
             messageControlId,
@@ -39,7 +43,7 @@ public sealed class Hl7ExportService(AppDbContext db)
         message.AddNewSegment(CreateSegment("PID",
             "1",
             string.Empty,
-            patient?.Id.ToString() ?? vitals.PatientId.ToString(),
+            patient?.PatientGuid.ToString() ?? vitals.PatientId.ToString(),
             string.Empty,
             ComponentValue(patient?.LastName ?? string.Empty, patient?.FirstName ?? string.Empty)));
 

@@ -5,7 +5,7 @@ namespace SyntheticVitalsDemo.Api.Controllers;
 
 [ApiController]
 [Route("api/export")]
-public sealed class ExportController(CsvExportService export, Hl7ExportService hl7Export, FhirExportService fhirExport) : ControllerBase
+public sealed class ExportController(CsvExportService export, Hl7ExportService hl7Export, FhirExportService fhirExport, RhythmFhirExportService rhythmFhirExport) : ControllerBase
 {
     [HttpGet("vitals")]
     public async Task<FileContentResult> ExportVitals()
@@ -30,5 +30,14 @@ public sealed class ExportController(CsvExportService export, Hl7ExportService h
         return fhir is null
             ? NotFound()
             : File(System.Text.Encoding.UTF8.GetBytes(fhir), "application/fhir+json", $"synthetic-vitals-{submissionId:N}.json");
+    }
+
+    [HttpGet("vitals/{submissionId:guid}/fhir-rhythm")]
+    public async Task<IActionResult> ExportVitalsSubmissionFhirRhythm(Guid submissionId)
+    {
+        var fhir = await rhythmFhirExport.ExportVitalsSubmissionAsync(submissionId);
+        return fhir is null
+            ? NotFound()
+            : File(System.Text.Encoding.UTF8.GetBytes(fhir), "application/fhir+json", $"rhythm-vitals-{submissionId:N}.json");
     }
 }

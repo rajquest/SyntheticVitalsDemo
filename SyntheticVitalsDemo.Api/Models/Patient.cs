@@ -2,7 +2,7 @@ namespace SyntheticVitalsDemo.Api.Models;
 
 public sealed class Patient
 {
-    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid PatientGuid { get; set; } = Guid.CreateVersion7();
     public Guid ClinicId { get; set; }
     public Clinic? Clinic { get; set; }
     public required string FirstName { get; set; }

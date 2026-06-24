@@ -3,6 +3,7 @@ import { ClinicDetailComponent } from './pages/clinic-detail/clinic-detail.compo
 import { ClinicListComponent } from './pages/clinic-list/clinic-list.component';
 import { AdminSettingsComponent } from './pages/admin-settings/admin-settings.component';
 import { DashboardComponent } from './pages/dashboard/dashboard.component';
+import { DeviceListComponent } from './pages/device-list/device-list.component';
 import { PatientListComponent } from './pages/patient-list/patient-list.component';
 import { PatientDetailComponent } from './pages/patient-detail/patient-detail.component';
 
@@ -13,6 +14,7 @@ export const routes: Routes = [
   { path: 'clinics/:clinicId', component: ClinicDetailComponent },
   { path: 'patients', component: PatientListComponent },
   { path: 'patients/:patientId', component: PatientDetailComponent },
+  { path: 'devices', component: DeviceListComponent },
   { path: 'admin-settings', component: AdminSettingsComponent },
   { path: '**', redirectTo: 'dashboard' }
 ];

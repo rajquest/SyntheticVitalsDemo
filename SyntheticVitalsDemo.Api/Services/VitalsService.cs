@@ -8,7 +8,7 @@ public sealed class VitalsService(AppDbContext db, IVitalsGenerationService gene
 {
     public async Task<IReadOnlyList<VitalsSubmissionResponse>?> GetForPatientAsync(Guid patientId)
     {
-        if (!await db.Patients.AnyAsync(x => x.Id == patientId)) return null;
+        if (!await db.Patients.AnyAsync(x => x.PatientGuid == patientId)) return null;
 
         return await db.VitalsSubmissions
             .Where(x => x.PatientId == patientId)
@@ -51,13 +51,13 @@ public sealed class VitalsService(AppDbContext db, IVitalsGenerationService gene
     {
         var patient = await db.Patients.FindAsync(patientId);
         if (patient is null) return null;
-        if (request.Days is not (7 or 14 or 30 or 60 or 180 or 365))
+        if (request.Days is not (2 or 7 or 14 or 30 or 60 or 180 or 365))
         {
-            throw new ArgumentOutOfRangeException(nameof(request.Days), "Days must be 7, 14, 30, 60, 180, or 365.");
+            throw new ArgumentOutOfRangeException(nameof(request.Days), "Days must be 2, 7, 14, 30, 60, 180, or 365.");
         }
-        if (!Validation.TryParsePulmonaryPressureTrendScenario(request.PulmonaryPressureScenario, out var trendScenario))
+        if (!Validation.TryParseVitalsTrendScenario(request.VitalsTrendScenario, out var vitalsTrendScenario))
         {
-            throw new ArgumentException("Pulmonary pressure trend scenario is required.", nameof(request.PulmonaryPressureScenario));
+            throw new ArgumentException("Vitals trend scenario is required.", nameof(request.VitalsTrendScenario));
         }
 
         if (request.ReplaceExisting)
@@ -65,7 +65,7 @@ public sealed class VitalsService(AppDbContext db, IVitalsGenerationService gene
             await db.VitalsSubmissions.Where(x => x.PatientId == patientId).ExecuteDeleteAsync();
         }
 
-        var vitals = generator.GenerateSeries(patient, request.Days, request.EndDateUtc ?? DateTime.UtcNow, trendScenario);
+        var vitals = generator.GenerateSeries(patient, request.Days, request.EndDateUtc ?? DateTime.UtcNow, vitalsTrendScenario);
         db.VitalsSubmissions.AddRange(vitals);
         await db.SaveChangesAsync();
         return vitals.Select(x => x.ToResponse()).ToArray();
@@ -73,7 +73,7 @@ public sealed class VitalsService(AppDbContext db, IVitalsGenerationService gene
 
     public async Task<bool> DeleteForPatientAsync(Guid patientId)
     {
-        if (!await db.Patients.AnyAsync(x => x.Id == patientId)) return false;
+        if (!await db.Patients.AnyAsync(x => x.PatientGuid == patientId)) return false;
 
         await db.VitalsSubmissions.Where(x => x.PatientId == patientId).ExecuteDeleteAsync();
         return true;

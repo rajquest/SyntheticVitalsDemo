@@ -55,9 +55,9 @@
 }
 
 <section class="panel controls">
-  <label>Pulmonary Artery Pressure Trend
-    <select [(ngModel)]="selectedPulmonaryPressureScenario">
-      @for (scenario of pulmonaryPressureTrendScenarios; track scenario.value) {
+  <label>Vitals Trend Scenario
+    <select [(ngModel)]="selectedTrendScenario">
+      @for (scenario of trendScenarioOptions; track scenario.value) {
         <option [value]="scenario.value">{{ scenario.label }}</option>
       }
     </select>
@@ -82,7 +82,18 @@
     }
     <span>{{ clearingVitals() ? 'Clearing...' : 'Clear Vitals' }}</span>
   </button>
+
+  @if (assignedDevice(); as device) {
+    <div
+      class="device-chip"
+      [matTooltip]="device.imeiNumber ? 'IMEI: ' + device.imeiNumber : ''">
+      <mat-icon>link</mat-icon>
+      <span class="device-chip__label">Device</span>
+      <span class="device-chip__value">{{ device.deviceType }} · {{ device.deviceId }}</span>
+    </div>
+  }
 </section>
+
 
 <section class="panel">
   <h2>Vitals charts</h2>
@@ -139,6 +150,10 @@
                   <button class="button secondary" type="button" [disabled]="payloadLoading()" (click)="viewPayload(row, 'fhir')">
                     @if (payloadLoading()) { <mat-spinner diameter="16" /> }
                     <span>FHIR</span>
+                  </button>
+                  <button class="button secondary" type="button" [disabled]="payloadLoading()" (click)="viewPayload(row, 'fhir-rhythm')">
+                    @if (payloadLoading()) { <mat-spinner diameter="16" /> }
+                    <span>Rhythm FHIR</span>
                   </button>
                 </div>
               </td>

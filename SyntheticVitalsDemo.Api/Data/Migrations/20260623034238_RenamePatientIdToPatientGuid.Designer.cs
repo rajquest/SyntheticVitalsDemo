@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SyntheticVitalsDemo.Api.Data;
 
@@ -11,9 +12,11 @@ using SyntheticVitalsDemo.Api.Data;
 namespace SyntheticVitalsDemo.Api.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260623034238_RenamePatientIdToPatientGuid")]
+    partial class RenamePatientIdToPatientGuid
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -43,59 +46,6 @@ namespace SyntheticVitalsDemo.Api.Data.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Clinics");
-                });
-
-            modelBuilder.Entity("SyntheticVitalsDemo.Api.Models.Device", b =>
-                {
-                    b.Property<string>("DeviceType")
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)")
-                        .HasColumnName("device_type");
-
-                    b.Property<string>("DeviceId")
-                        .HasMaxLength(150)
-                        .HasColumnType("varchar(150)")
-                        .HasColumnName("device_id");
-
-                    b.Property<string>("BluetoothAddress")
-                        .HasMaxLength(50)
-                        .HasColumnType("varchar(50)")
-                        .HasColumnName("bluetooth_address");
-
-                    b.Property<DateTime>("DateTimeCreated")
-                        .HasColumnType("datetime(6)")
-                        .HasColumnName("date_time_created");
-
-                    b.Property<DateTime?>("DateTimeDeactivated")
-                        .HasColumnType("datetime(6)")
-                        .HasColumnName("date_time_deactivated");
-
-                    b.Property<DateTime>("DateTimeLastUpdated")
-                        .HasColumnType("datetime(6)")
-                        .HasColumnName("date_time_last_updated");
-
-                    b.Property<DateTime?>("DateTimePatientAssigned")
-                        .HasColumnType("datetime(6)")
-                        .HasColumnName("date_time_patient_assigned");
-
-                    b.Property<string>("ImeiNumber")
-                        .HasMaxLength(50)
-                        .HasColumnType("varchar(50)")
-                        .HasColumnName("imei_number");
-
-                    b.Property<Guid?>("PatientGuid")
-                        .HasColumnType("char(36)")
-                        .HasColumnName("patient_guid");
-
-                    b.HasKey("DeviceType", "DeviceId");
-
-                    b.HasIndex("ImeiNumber")
-                        .HasDatabaseName("idx_imei");
-
-                    b.HasIndex("PatientGuid")
-                        .HasDatabaseName("idx_patient");
-
-                    b.ToTable("device", (string)null);
                 });
 
             modelBuilder.Entity("SyntheticVitalsDemo.Api.Models.Patient", b =>

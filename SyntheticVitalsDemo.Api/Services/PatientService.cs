@@ -13,7 +13,7 @@ public sealed class PatientService(AppDbContext db, SyntheticPatientGeneratorSer
             .OrderBy(x => x.LastName)
             .ThenBy(x => x.FirstName)
             .Select(x => new PatientResponse(
-                x.Id,
+                x.PatientGuid,
                 x.ClinicId,
                 x.FirstName,
                 x.LastName,
@@ -48,7 +48,7 @@ public sealed class PatientService(AppDbContext db, SyntheticPatientGeneratorSer
             .OrderBy(x => x.LastName)
             .ThenBy(x => x.FirstName)
             .Select(x => new PatientResponse(
-                x.Id,
+                x.PatientGuid,
                 x.ClinicId,
                 x.FirstName,
                 x.LastName,
@@ -76,7 +76,7 @@ public sealed class PatientService(AppDbContext db, SyntheticPatientGeneratorSer
 
     public async Task<PatientResponse?> GetAsync(Guid id)
     {
-        var patient = await db.Patients.Include(x => x.VitalsSubmissions).FirstOrDefaultAsync(x => x.Id == id);
+        var patient = await db.Patients.Include(x => x.VitalsSubmissions).FirstOrDefaultAsync(x => x.PatientGuid == id);
         return patient?.ToResponse();
     }
 
@@ -104,15 +104,16 @@ public sealed class PatientService(AppDbContext db, SyntheticPatientGeneratorSer
     public async Task<GeneratePatientsResponse?> GenerateAsync(Guid clinicId, GeneratePatientsRequest request)
     {
         if (!await db.Clinics.AnyAsync(x => x.Id == clinicId)) return null;
-        var patientScenario = ResolvePatientScenario(request);
-        Validation.TryParsePulmonaryPressureTrendScenario(request.PulmonaryPressureTrendScenario, out var trendScenario);
+        Validation.TryParseVitalsTrendScenario(request.VitalsTrendScenario, out var vitalsTrendScenario);
+        var resolvedPaScenario = Validation.ResolvePatientScenarioFromVitalsTrend(vitalsTrendScenario);
+        var patientScenario = ResolvePatientScenario(request, resolvedPaScenario);
         var trendDays = request.TrendDays;
 
         var patients = generator.Generate(clinicId, request, patientScenario);
         var vitalsSubmissions = patients
             .SelectMany(patient =>
             {
-                var series = vitalsGenerator.GenerateSeries(patient, trendDays, DateTime.UtcNow, trendScenario);
+                var series = vitalsGenerator.GenerateSeries(patient, trendDays, DateTime.UtcNow, vitalsTrendScenario);
                 var latest = series[series.Count - 1];
                 patient.SystolicBp = latest.SystolicBp;
                 patient.DiastolicBp = latest.DiastolicBp;
@@ -141,7 +142,7 @@ public sealed class PatientService(AppDbContext db, SyntheticPatientGeneratorSer
             patients.Select(x => x.ToResponse()).ToArray());
     }
 
-    private static PatientScenario ResolvePatientScenario(GeneratePatientsRequest request)
+    private static PatientScenario ResolvePatientScenario(GeneratePatientsRequest request, PatientScenario resolvedPaScenario)
     {
         if (!string.IsNullOrWhiteSpace(request.Scenario) &&
             Validation.TryParseScenario(request.Scenario, out var parsedScenario))
@@ -149,18 +150,12 @@ public sealed class PatientService(AppDbContext db, SyntheticPatientGeneratorSer
             return parsedScenario;
         }
 
-        if (Validation.TryParseScenario(request.PulmonaryPressureScenario, out var parsed) &&
-            Validation.PulmonaryPressureScenarios.Contains(parsed))
-        {
-            return parsed;
-        }
-
-        return PatientScenario.NormalPaPressure;
+        return resolvedPaScenario;
     }
 
     public async Task<PatientResponse?> UpdateAsync(Guid id, UpdatePatientRequest request)
     {
-        var patient = await db.Patients.Include(x => x.VitalsSubmissions).FirstOrDefaultAsync(x => x.Id == id);
+        var patient = await db.Patients.Include(x => x.VitalsSubmissions).FirstOrDefaultAsync(x => x.PatientGuid == id);
         if (patient is null) return null;
 
         Validation.TryParseSex(request.Sex, out var sex);

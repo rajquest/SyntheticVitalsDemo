@@ -1,13 +1,14 @@
 export interface Clinic {
   id: string;
   name: string;
+  siteId?: string | null;
   createdAtUtc: string;
   patientCount: number;
   submissionCount: number;
 }
 
 export interface Patient {
-  id: string;
+  patientGuid: string;
   clinicId: string;
   firstName: string;
   lastName: string;
@@ -67,6 +68,36 @@ export interface DashboardSummary {
   recentVitalsSubmissions: RecentVitalsSubmission[];
 }
 
+export interface Device {
+  deviceType: string;
+  deviceId: string;
+  imeiNumber?: string | null;
+  bluetoothAddress?: string | null;
+  dateTimeCreated: string;
+  dateTimeLastUpdated: string;
+  dateTimeDeactivated?: string | null;
+  dateTimePatientAssigned?: string | null;
+  patientGuid?: string | null;
+  isActive: boolean;
+  isAssigned: boolean;
+}
+
+export interface CreateDeviceRequest {
+  deviceType: string;
+  deviceId: string;
+  imeiNumber?: string | null;
+  bluetoothAddress?: string | null;
+}
+
+export interface UpdateDeviceRequest {
+  imeiNumber?: string | null;
+  bluetoothAddress?: string | null;
+}
+
+export interface AssignDeviceRequest {
+  patientGuid: string;
+}
+
 export interface CreatePatientRequest {
   firstName: string;
   lastName: string;
@@ -80,17 +111,16 @@ export interface GenerateVitalsRequest {
 }
 
 export interface GenerateVitalsSeriesRequest {
-  days: 7 | 14 | 30 | 60 | 180 | 365;
+  days: 2 | 7 | 14 | 30 | 60 | 180 | 365;
   endDateUtc?: string | null;
   replaceExisting: boolean;
-  pulmonaryPressureScenario: string;
+  vitalsTrendScenario: string;
 }
 
 export interface GeneratePatientsRequest {
   count: 1 | 5 | 10 | 25 | 50 | 100;
   malePercentage: number;
-  pulmonaryPressureScenario: string;
-  pulmonaryPressureTrendScenario: string;
+  vitalsTrendScenario: string;
   trendDays: number;
 }
 
@@ -135,6 +165,20 @@ export const pulmonaryPressureTrendScenarios = [
   { value: 'SuddenPaPressureSpike', label: 'Sudden PA pressure spike' },
   { value: 'ImprovingAfterDiureticAdjustment', label: 'Improving after diuretic adjustment' },
   { value: 'PersistentlyHighPaDiastolic', label: 'Persistently high PA diastolic' }
+];
+
+export interface TrendScenarioOption {
+  value: string;
+  label: string;
+}
+
+export const trendScenarioOptions: TrendScenarioOption[] = [
+  { value: 'NormalStable',              label: 'Normal (Stable)' },
+  { value: 'ChronicHfStable',           label: 'Chronic HF (Stable High)' },
+  { value: 'EarlyFluidOverload',        label: 'Early Fluid Overload (Slow Rise)' },
+  { value: 'AcuteHfDecompensation',     label: 'Acute HF Decompensation (Rapid Rise)' },
+  { value: 'DiuresisTreatmentResponse', label: 'Diuresis / Treatment Response (Improving)' },
+  { value: 'ExerciseActivitySpike',     label: 'Exercise / Activity Spike (Temporary Spike)' }
 ];
 
 export const sexes = ['Female', 'Male', 'Other', 'Unknown'];

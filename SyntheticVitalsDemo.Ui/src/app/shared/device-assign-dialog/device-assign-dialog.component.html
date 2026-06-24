@@ -1,0 +1,76 @@
+<h2 mat-dialog-title>Device Assignment — {{ data.patient.firstName }} {{ data.patient.lastName }}</h2>
+
+<mat-dialog-content>
+  @if (error()) {
+    <div class="inline-error">{{ error() }}</div>
+  }
+
+  <h3>Assigned Devices</h3>
+  @if (assignedDevices().length === 0) {
+    <p class="muted-text">No devices assigned to this patient.</p>
+  } @else {
+    <div class="table-wrap">
+      <table class="device-table">
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Device ID</th>
+            <th>IMEI</th>
+            <th>Assigned</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (device of assignedDevices(); track device.deviceId) {
+            <tr>
+              <td>{{ device.deviceType }}</td>
+              <td>{{ device.deviceId }}</td>
+              <td>{{ device.imeiNumber ?? '—' }}</td>
+              <td>{{ device.dateTimePatientAssigned | date: 'mediumDate' }}</td>
+              <td class="action-cell">
+                <button
+                  mat-icon-button
+                  class="danger-icon"
+                  type="button"
+                  (click)="unassign(device)"
+                  [matTooltip]="'Unassign ' + device.deviceType">
+                  <mat-icon>link_off</mat-icon>
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  @if (availableDevices().length > 0) {
+    @if (assignedDevices().length > 0) {
+      <p class="swap-warning">
+        <mat-icon>info</mat-icon>
+        Assigning a new device will automatically unassign the current one.
+      </p>
+    }
+    <div class="assign-form">
+      <mat-form-field appearance="outline" class="device-select">
+        <mat-label>{{ assignedDevices().length > 0 ? 'Replace with device' : 'Assign a device' }}</mat-label>
+        <mat-select [(ngModel)]="selectedDeviceKey">
+          @for (d of availableDevices(); track d.deviceId) {
+            <mat-option [value]="d.deviceType + '||' + d.deviceId">
+              {{ d.deviceType }} — {{ d.deviceId }}{{ d.imeiNumber ? ' (' + d.imeiNumber + ')' : '' }}
+            </mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      <button class="button" type="button" [disabled]="!selectedDeviceKey" (click)="assign()">
+        {{ assignedDevices().length > 0 ? 'Replace' : 'Assign' }}
+      </button>
+    </div>
+  } @else if (assignedDevices().length === 0) {
+    <p class="muted-text">No available devices to assign.</p>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button class="dialog-close-button" type="button" (click)="close()">Close</button>
+</mat-dialog-actions>

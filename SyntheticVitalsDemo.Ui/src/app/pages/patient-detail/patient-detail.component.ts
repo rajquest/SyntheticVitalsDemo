@@ -4,18 +4,19 @@ import { FormsModule } from '@angular/forms';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ApiService } from '../../core/api.service';
-import { Patient, pulmonaryPressureTrendScenarios, VitalsSubmission } from '../../core/models';
+import { Device, Patient, TrendScenarioOption, trendScenarioOptions, VitalsSubmission } from '../../core/models';
 import { PayloadDialogComponent } from '../../shared/payload-dialog/payload-dialog.component';
 import { VitalsChartsComponent } from '../../shared/vitals-charts/vitals-charts.component';
 
-type SubmissionPayloadFormat = 'hl7' | 'fhir';
+type SubmissionPayloadFormat = 'hl7' | 'fhir' | 'fhir-rhythm';
 type PatientVitalsDateRange = '7d' | '14d' | '1m' | 'ytd' | '12m';
 
 @Component({
   selector: 'app-patient-detail',
-  imports: [CommonModule, FormsModule, MatDialogModule, MatIconModule, MatProgressSpinnerModule, RouterLink, VitalsChartsComponent],
+  imports: [CommonModule, FormsModule, MatDialogModule, MatIconModule, MatProgressSpinnerModule, MatTooltipModule, RouterLink, VitalsChartsComponent],
   templateUrl: './patient-detail.component.html'
 })
 export class PatientDetailComponent implements OnInit {
@@ -32,14 +33,15 @@ export class PatientDetailComponent implements OnInit {
     { value: '12m', label: '12 months' }
   ];
   selectedDateRange = signal<PatientVitalsDateRange>('7d');
-  seriesDayOptions = [7, 14, 30, 60, 180, 365] as const;
-  selectedDays: 7 | 14 | 30 | 60 | 180 | 365 = 14;
-  pulmonaryPressureTrendScenarios = pulmonaryPressureTrendScenarios;
-  selectedPulmonaryPressureScenario = 'NormalStable';
+  seriesDayOptions = [2, 7, 14, 30, 60, 180, 365] as const;
+  selectedDays: 2 | 7 | 14 | 30 | 60 | 180 | 365 = 14;
+  trendScenarioOptions: TrendScenarioOption[] = trendScenarioOptions;
+  selectedTrendScenario = 'NormalStable';
   replaceExisting = true;
   generatingSeries = signal(false);
   clearingVitals = signal(false);
   payloadLoading = signal(false);
+  assignedDevice = signal<Device | null>(null);
 
   private patientId = '';
 
@@ -56,6 +58,16 @@ export class PatientDetailComponent implements OnInit {
   ngOnInit(): void {
     this.patientId = this.route.snapshot.paramMap.get('patientId') ?? '';
     this.load();
+    this.loadAssignedDevice();
+  }
+
+  loadAssignedDevice(): void {
+    this.api.getDevices().subscribe({
+      next: devices => {
+        const patientGuid = this.patientId;
+        this.assignedDevice.set(devices.find(d => d.patientGuid === patientGuid) ?? null);
+      }
+    });
   }
 
   load(): void {
@@ -83,7 +95,7 @@ export class PatientDetailComponent implements OnInit {
     this.api.generateVitalsSeries(this.patientId, {
       days: this.selectedDays,
       replaceExisting: this.replaceExisting,
-      pulmonaryPressureScenario: this.selectedPulmonaryPressureScenario
+      vitalsTrendScenario: this.selectedTrendScenario
     }).subscribe({
       next: () => {
         this.generatingSeries.set(false);
@@ -125,14 +137,22 @@ export class PatientDetailComponent implements OnInit {
     this.payloadLoading.set(true);
     const request = format === 'hl7'
       ? this.api.getVitalsSubmissionHl7(submission.id)
-      : this.api.getVitalsSubmissionFhir(submission.id);
+      : format === 'fhir-rhythm'
+        ? this.api.getVitalsSubmissionFhirRhythm(submission.id)
+        : this.api.getVitalsSubmissionFhir(submission.id);
+
+    const titleLabels: Record<SubmissionPayloadFormat, string> = {
+      hl7: 'HL7',
+      fhir: 'FHIR',
+      'fhir-rhythm': 'Rhythm FHIR'
+    };
 
     request.subscribe({
       next: payload => {
         this.payloadLoading.set(false);
         this.dialog.open(PayloadDialogComponent, {
           data: {
-            title: `${format.toUpperCase()} submission`,
+            title: `${titleLabels[format]} submission`,
             payload: format === 'hl7' ? payload.replace(/\r\n|\r|\n/g, '\n') : payload,
             fileName: `synthetic-vitals-${submission.id}.${format === 'hl7' ? 'txt' : 'json'}`,
             contentType: format === 'hl7' ? 'text/plain' : 'application/fhir+json'
@@ -142,7 +162,7 @@ export class PatientDetailComponent implements OnInit {
         });
       },
       error: () => {
-        this.error.set(`Unable to load ${format.toUpperCase()} payload.`);
+        this.error.set(`Unable to load ${titleLabels[format]} payload.`);
         this.payloadLoading.set(false);
       }
     });

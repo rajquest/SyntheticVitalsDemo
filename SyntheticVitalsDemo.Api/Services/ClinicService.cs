@@ -13,6 +13,7 @@ public sealed class ClinicService(AppDbContext db)
             {
                 x.Id,
                 x.Name,
+                x.SiteId,
                 x.CreatedAtUtc,
                 PatientCount = x.Patients.Count,
                 SubmissionCount = x.Patients.SelectMany(patient => patient.VitalsSubmissions).Count()
@@ -22,6 +23,7 @@ public sealed class ClinicService(AppDbContext db)
             .Select(x => new ClinicResponse(
                 x.Id,
                 x.Name,
+                x.SiteId,
                 x.CreatedAtUtc,
                 x.PatientCount,
                 x.SubmissionCount))
