@@ -18,7 +18,20 @@ public sealed class RhythmFhirExportService(AppDbContext db)
     private const string UcumSystem     = "http://unitsofmeasure.org";
     private const string ObsCatSystem   = "http://terminology.hl7.org/CodeSystem/observation-category";
     private const string OrgIdSystem    = "https://api.rhythm360.io/fhir/clinic-code";
-    private const string DeviceTypeName = "Cordella PA Sensor";
+    private const string DeviceTypeName = "Cordella Patient Gateway";
+    private const string UnassignedDeviceSerial = "UNASSIGNED";
+
+    // Reflects the real order a vitals session is taken: BP panel, then
+    // SpO2/HR, then weight, then seated PA, then a reposition pause before
+    // supine PA. Readings within the same measurement event (BP panel;
+    // seated PA systolic/diastolic/mean; supine PA systolic/diastolic/mean)
+    // share one effectiveDateTime since they come from a single reading.
+    private const int BpPanelOffsetSeconds    = 0;
+    private const int Spo2OffsetSeconds       = 15;
+    private const int HeartRateOffsetSeconds  = 16;
+    private const int WeightOffsetSeconds     = 30;
+    private const int SeatedPaOffsetSeconds   = 90;
+    private const int SupinePaOffsetSeconds   = 180;
 
     public async Task<string?> ExportVitalsSubmissionAsync(Guid id)
     {
@@ -27,50 +40,59 @@ public sealed class RhythmFhirExportService(AppDbContext db)
             .FirstOrDefaultAsync(x => x.Id == id);
 
         if (vitals is null) return null;
-        var raw = Serializer.SerializeToString(BuildBundle(vitals));
+
+        var device = vitals.Patient is not null
+            ? await db.Devices.FirstOrDefaultAsync(x => x.PatientGuid == vitals.Patient.PatientGuid)
+            : null;
+
+        var raw = Serializer.SerializeToString(BuildBundle(vitals, device));
         using var doc = JsonDocument.Parse(raw);
         return JsonSerializer.Serialize(doc.RootElement, JsonOptions);
     }
 
-    private static Bundle BuildBundle(DomainVitals vitals)
+    private static Bundle BuildBundle(DomainVitals vitals, Models.Device? device)
     {
         var patient    = vitals.Patient;
         var clinicName = patient?.Clinic?.Name ?? "Unknown Clinic";
         var clinicCode = ToClinicCode(clinicName);
         var effective  = new DateTimeOffset(vitals.SubmittedAtUtc, TimeSpan.Zero);
+        var deviceSerial = device?.DeviceId ?? UnassignedDeviceSerial;
 
-        // TODO: Replace with real Cordella PA Sensor device serial number before production.
-        var deviceSerial = $"CRD-{Random.Shared.Next(100000000, 999999999)}";
+        var orgUrn = NewUrn();
+        var patUrn = NewUrn();
+        var devUrn = NewUrn();
 
         var bundle = new Bundle { Type = Bundle.BundleType.Transaction };
 
-        bundle.Entry.Add(OrgEntry(clinicName, clinicCode));
-        bundle.Entry.Add(PatientEntry(patient));
-        bundle.Entry.Add(DeviceEntry(deviceSerial));
-        bundle.Entry.Add(BpPanelEntry(vitals, effective));
-        bundle.Entry.Add(ObsEntry("obs-spo2",        VitalLoincCodes.Spo2,                 VitalLoincDisplays.Spo2,                 vitals.Spo2,         UcumUnits.Percent,   UcumUnits.Percent,   effective));
-        bundle.Entry.Add(ObsEntry("obs-heart-rate",  VitalLoincCodes.HeartRate,            VitalLoincDisplays.HeartRate,            vitals.HeartRate,    UcumUnits.PerMinute, UcumUnits.PerMinute, effective));
-        bundle.Entry.Add(ObsEntry("obs-body-weight", VitalLoincCodes.BodyWeight,           VitalLoincDisplays.BodyWeight,           (int)vitals.WeightLbs, UcumUnits.Pounds,  UcumUnits.Pounds,   effective));
-        bundle.Entry.Add(PaEntry("obs-seated-pa-systolic",  VitalLoincCodes.PulmonaryArterySystolic,  VitalLoincDisplays.PulmonaryArterySystolic,  vitals.SeatedPaSystolic,  BodyPositionCodes.SittingCode, BodyPositionCodes.SittingDisplay, effective));
-        bundle.Entry.Add(PaEntry("obs-seated-pa-diastolic", VitalLoincCodes.PulmonaryArteryDiastolic, VitalLoincDisplays.PulmonaryArteryDiastolic, vitals.SeatedPaDiastolic, BodyPositionCodes.SittingCode, BodyPositionCodes.SittingDisplay, effective));
-        bundle.Entry.Add(PaEntry("obs-seated-pa-mean",      VitalLoincCodes.PulmonaryArteryMean,      VitalLoincDisplays.PulmonaryArteryMean,      vitals.SeatedPaMean,      BodyPositionCodes.SittingCode, BodyPositionCodes.SittingDisplay, effective));
-        bundle.Entry.Add(PaEntry("obs-supine-pa-systolic",  VitalLoincCodes.PulmonaryArterySystolic,  VitalLoincDisplays.PulmonaryArterySystolic,  vitals.SupinePaSystolic,  BodyPositionCodes.SupineCode,  BodyPositionCodes.SupineDisplay,  effective));
-        bundle.Entry.Add(PaEntry("obs-supine-pa-diastolic", VitalLoincCodes.PulmonaryArteryDiastolic, VitalLoincDisplays.PulmonaryArteryDiastolic, vitals.SupinePaDiastolic, BodyPositionCodes.SupineCode,  BodyPositionCodes.SupineDisplay,  effective));
-        bundle.Entry.Add(PaEntry("obs-supine-pa-mean",      VitalLoincCodes.PulmonaryArteryMean,      VitalLoincDisplays.PulmonaryArteryMean,      vitals.SupinePaMean,      BodyPositionCodes.SupineCode,  BodyPositionCodes.SupineDisplay,  effective));
+        bundle.Entry.Add(OrgEntry(orgUrn, clinicName, clinicCode));
+        bundle.Entry.Add(PatientEntry(patUrn, patient));
+        bundle.Entry.Add(DeviceEntry(devUrn, deviceSerial));
+        bundle.Entry.Add(BpPanelEntry(vitals, effective.AddSeconds(BpPanelOffsetSeconds), patUrn, devUrn, orgUrn));
+        bundle.Entry.Add(ObsEntry(VitalLoincCodes.Spo2,      VitalLoincDisplays.Spo2,      vitals.Spo2,         UcumUnits.Percent,   UcumUnits.Percent,   effective.AddSeconds(Spo2OffsetSeconds),      patUrn, devUrn, orgUrn));
+        bundle.Entry.Add(ObsEntry(VitalLoincCodes.HeartRate, VitalLoincDisplays.HeartRate, vitals.HeartRate,    UcumUnits.PerMinute, UcumUnits.PerMinute, effective.AddSeconds(HeartRateOffsetSeconds), patUrn, devUrn, orgUrn));
+        bundle.Entry.Add(ObsEntry(VitalLoincCodes.BodyWeight, VitalLoincDisplays.BodyWeight, (int)vitals.WeightLbs, UcumUnits.Pounds, UcumUnits.Pounds,   effective.AddSeconds(WeightOffsetSeconds),    patUrn, devUrn, orgUrn));
+        bundle.Entry.Add(PaEntry(VitalLoincCodes.PulmonaryArterySystolic,  VitalLoincDisplays.PulmonaryArterySystolic,  vitals.SeatedPaSystolic,  BodyPositionCodes.SittingCode, BodyPositionCodes.SittingDisplay, effective.AddSeconds(SeatedPaOffsetSeconds),  patUrn, devUrn, orgUrn));
+        bundle.Entry.Add(PaEntry(VitalLoincCodes.PulmonaryArteryDiastolic, VitalLoincDisplays.PulmonaryArteryDiastolic, vitals.SeatedPaDiastolic, BodyPositionCodes.SittingCode, BodyPositionCodes.SittingDisplay, effective.AddSeconds(SeatedPaOffsetSeconds), patUrn, devUrn, orgUrn));
+        bundle.Entry.Add(PaEntry(VitalLoincCodes.PulmonaryArteryMean,      VitalLoincDisplays.PulmonaryArteryMean,      vitals.SeatedPaMean,      BodyPositionCodes.SittingCode, BodyPositionCodes.SittingDisplay, effective.AddSeconds(SeatedPaOffsetSeconds),      patUrn, devUrn, orgUrn));
+        bundle.Entry.Add(PaEntry(VitalLoincCodes.PulmonaryArterySystolic,  VitalLoincDisplays.PulmonaryArterySystolic,  vitals.SupinePaSystolic,  BodyPositionCodes.SupineCode,  BodyPositionCodes.SupineDisplay,  effective.AddSeconds(SupinePaOffsetSeconds),  patUrn, devUrn, orgUrn));
+        bundle.Entry.Add(PaEntry(VitalLoincCodes.PulmonaryArteryDiastolic, VitalLoincDisplays.PulmonaryArteryDiastolic, vitals.SupinePaDiastolic, BodyPositionCodes.SupineCode,  BodyPositionCodes.SupineDisplay,  effective.AddSeconds(SupinePaOffsetSeconds), patUrn, devUrn, orgUrn));
+        bundle.Entry.Add(PaEntry(VitalLoincCodes.PulmonaryArteryMean,      VitalLoincDisplays.PulmonaryArteryMean,      vitals.SupinePaMean,      BodyPositionCodes.SupineCode,  BodyPositionCodes.SupineDisplay,  effective.AddSeconds(SupinePaOffsetSeconds),      patUrn, devUrn, orgUrn));
 
         return bundle;
     }
 
-    private static Bundle.EntryComponent OrgEntry(string name, string code) =>
-        PostEntry("urn:uuid:org-1", "Organization",
+    private static string NewUrn() => $"urn:uuid:{Guid.NewGuid()}";
+
+    private static Bundle.EntryComponent OrgEntry(string urn, string name, string code) =>
+        PostEntry(urn, "Organization",
             new Organization
             {
                 Identifier = [new Identifier { System = OrgIdSystem, Value = code }],
                 Name       = name
             });
 
-    private static Bundle.EntryComponent PatientEntry(DomainPatient? patient) =>
-        PostEntry("urn:uuid:pat-1", "Patient",
+    private static Bundle.EntryComponent PatientEntry(string urn, DomainPatient? patient) =>
+        PostEntry(urn, "Patient",
             new Patient
             {
                 Name = [new HumanName
@@ -83,24 +105,24 @@ public sealed class RhythmFhirExportService(AppDbContext db)
                     : null
             });
 
-    private static Bundle.EntryComponent DeviceEntry(string serialNumber) =>
-        PostEntry("urn:uuid:dev-1", "Device",
+    private static Bundle.EntryComponent DeviceEntry(string urn, string serialNumber) =>
+        PostEntry(urn, "Device",
             new Device
             {
                 SerialNumber = serialNumber,
                 Type         = new CodeableConcept { Text = DeviceTypeName }
             });
 
-    private static Bundle.EntryComponent BpPanelEntry(DomainVitals vitals, DateTimeOffset effective) =>
-        PostEntry("urn:uuid:obs-bp", "Observation",
+    private static Bundle.EntryComponent BpPanelEntry(DomainVitals vitals, DateTimeOffset effective, string patUrn, string devUrn, string orgUrn) =>
+        PostEntry(NewUrn(), "Observation",
             new Observation
             {
                 Status    = ObservationStatus.Final,
                 Category  = VitalSignsCategory(),
                 Code      = LoincConcept("85354-9", "Blood pressure panel"),
-                Subject   = new ResourceReference("urn:uuid:pat-1"),
-                Device    = new ResourceReference("urn:uuid:dev-1"),
-                Performer = [new ResourceReference("urn:uuid:org-1")],
+                Subject   = new ResourceReference(patUrn),
+                Device    = new ResourceReference(devUrn),
+                Performer = [new ResourceReference(orgUrn)],
                 Effective = new FhirDateTime(effective),
                 Component =
                 [
@@ -118,33 +140,35 @@ public sealed class RhythmFhirExportService(AppDbContext db)
             });
 
     private static Bundle.EntryComponent ObsEntry(
-        string obsId, string loincCode, string display,
-        int value, string unitDisplay, string ucumCode, DateTimeOffset effective) =>
-        PostEntry($"urn:uuid:{obsId}", "Observation",
+        string loincCode, string display,
+        int value, string unitDisplay, string ucumCode, DateTimeOffset effective,
+        string patUrn, string devUrn, string orgUrn) =>
+        PostEntry(NewUrn(), "Observation",
             new Observation
             {
                 Status    = ObservationStatus.Final,
                 Category  = VitalSignsCategory(),
                 Code      = LoincConcept(loincCode, display),
-                Subject   = new ResourceReference("urn:uuid:pat-1"),
-                Device    = new ResourceReference("urn:uuid:dev-1"),
-                Performer = [new ResourceReference("urn:uuid:org-1")],
+                Subject   = new ResourceReference(patUrn),
+                Device    = new ResourceReference(devUrn),
+                Performer = [new ResourceReference(orgUrn)],
                 Effective = new FhirDateTime(effective),
                 Value     = new Quantity { Value = value, Unit = unitDisplay, System = UcumSystem, Code = ucumCode }
             });
 
     private static Bundle.EntryComponent PaEntry(
-        string obsId, string loincCode, string display,
-        int value, string positionCode, string positionDisplay, DateTimeOffset effective) =>
-        PostEntry($"urn:uuid:{obsId}", "Observation",
+        string loincCode, string display,
+        int value, string positionCode, string positionDisplay, DateTimeOffset effective,
+        string patUrn, string devUrn, string orgUrn) =>
+        PostEntry(NewUrn(), "Observation",
             new Observation
             {
                 Status    = ObservationStatus.Final,
                 Category  = VitalSignsCategory(),
                 Code      = LoincConcept(loincCode, display),
-                Subject   = new ResourceReference("urn:uuid:pat-1"),
-                Device    = new ResourceReference("urn:uuid:dev-1"),
-                Performer = [new ResourceReference("urn:uuid:org-1")],
+                Subject   = new ResourceReference(patUrn),
+                Device    = new ResourceReference(devUrn),
+                Performer = [new ResourceReference(orgUrn)],
                 Effective = new FhirDateTime(effective),
                 Value     = MmHgQuantity(value),
                 Component =
