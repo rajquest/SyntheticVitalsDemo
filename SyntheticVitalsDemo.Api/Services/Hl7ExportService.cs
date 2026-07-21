@@ -13,10 +13,17 @@ public sealed class Hl7ExportService(AppDbContext db)
             .Include(x => x.Patient)!.ThenInclude(x => x!.Clinic)
             .FirstOrDefaultAsync(x => x.Id == id);
 
-        return vitals is null ? null : BuildMessage(vitals);
+        if (vitals is null) return null;
+
+        var device = vitals.Patient is not null
+            ? await db.Devices.FirstOrDefaultAsync(x => x.PatientGuid == vitals.Patient.PatientGuid
+                                                     && x.DateTimeDeactivated == null)
+            : null;
+
+        return BuildMessage(vitals, device?.DeviceId ?? string.Empty);
     }
 
-    private static string BuildMessage(VitalsSubmission vitals)
+    private static string BuildMessage(VitalsSubmission vitals, string deviceSerial)
     {
         var patient = vitals.Patient;
         var clinic = patient?.Clinic;
@@ -31,7 +38,7 @@ public sealed class Hl7ExportService(AppDbContext db)
         message.AddSegmentMSH(
             "SyntheticVitalsDemo",
             "Edwards Lifesciences",
-            "SyntheticVitalsDemo",
+            "PaceMate",
             receivingFacility,
             string.Empty,
             "ORU^R01",
@@ -45,7 +52,10 @@ public sealed class Hl7ExportService(AppDbContext db)
             string.Empty,
             patient?.PatientGuid.ToString() ?? vitals.PatientId.ToString(),
             string.Empty,
-            ComponentValue(patient?.LastName ?? string.Empty, patient?.FirstName ?? string.Empty)));
+            ComponentValue(patient?.LastName ?? string.Empty, patient?.FirstName ?? string.Empty),
+            string.Empty,
+            patient?.DateOfBirth.ToString("yyyyMMdd") ?? string.Empty,
+            PatientSexCode(patient?.Sex)));
 
         message.AddNewSegment(CreateSegment("OBR",
             "1",
@@ -53,11 +63,11 @@ public sealed class Hl7ExportService(AppDbContext db)
             string.Empty,
             "85354-9^Blood pressure panel with all children optional^LN"));
 
-        message.AddNewSegment(CreateObservation(1, "NM", CodedElement(VitalLoincCodes.SystolicBp, VitalLoincDisplays.SystolicBp), string.Empty, vitals.SystolicBp.ToString(), UcumUnits.MmHg));
-        message.AddNewSegment(CreateObservation(2, "NM", CodedElement(VitalLoincCodes.DiastolicBp, VitalLoincDisplays.DiastolicBp), string.Empty, vitals.DiastolicBp.ToString(), UcumUnits.MmHg));
-        message.AddNewSegment(CreateObservation(3, "NM", CodedElement(VitalLoincCodes.Spo2, VitalLoincDisplays.Spo2), string.Empty, vitals.Spo2.ToString(), UcumUnits.Percent));
-        message.AddNewSegment(CreateObservation(4, "NM", CodedElement(VitalLoincCodes.HeartRate, VitalLoincDisplays.HeartRate), string.Empty, vitals.HeartRate.ToString(), UcumUnits.PerMinute));
-        message.AddNewSegment(CreateObservation(5, "NM", CodedElement(VitalLoincCodes.BodyWeight, VitalLoincDisplays.BodyWeight), string.Empty, vitals.WeightLbs.ToString("0.0"), UcumUnits.Pounds));
+        message.AddNewSegment(CreateObservation(1, "NM", CodedElement(VitalLoincCodes.SystolicBp, VitalLoincDisplays.SystolicBp), string.Empty, vitals.SystolicBp.ToString(), UcumUnits.MmHg, deviceSerial));
+        message.AddNewSegment(CreateObservation(2, "NM", CodedElement(VitalLoincCodes.DiastolicBp, VitalLoincDisplays.DiastolicBp), string.Empty, vitals.DiastolicBp.ToString(), UcumUnits.MmHg, deviceSerial));
+        message.AddNewSegment(CreateObservation(3, "NM", CodedElement(VitalLoincCodes.Spo2, VitalLoincDisplays.Spo2), string.Empty, vitals.Spo2.ToString(), UcumUnits.Percent, deviceSerial));
+        message.AddNewSegment(CreateObservation(4, "NM", CodedElement(VitalLoincCodes.HeartRate, VitalLoincDisplays.HeartRate), string.Empty, vitals.HeartRate.ToString(), UcumUnits.PerMinute, deviceSerial));
+        message.AddNewSegment(CreateObservation(5, "NM", CodedElement(VitalLoincCodes.BodyWeight, VitalLoincDisplays.BodyWeight), string.Empty, vitals.WeightLbs.ToString("0.0"), UcumUnits.Pounds, deviceSerial));
 
         AddPulmonaryArteryPressureGroup(
             message,
@@ -66,7 +76,8 @@ public sealed class Hl7ExportService(AppDbContext db)
             vitals.SeatedPaSystolic,
             vitals.SeatedPaDiastolic,
             vitals.SeatedPaMean,
-            CodedElement(BodyPositionCodes.SittingCode, BodyPositionCodes.SittingDisplay));
+            CodedElement(BodyPositionCodes.SittingCode, BodyPositionCodes.SittingDisplay),
+            deviceSerial);
 
         AddPulmonaryArteryPressureGroup(
             message,
@@ -75,7 +86,8 @@ public sealed class Hl7ExportService(AppDbContext db)
             vitals.SupinePaSystolic,
             vitals.SupinePaDiastolic,
             vitals.SupinePaMean,
-            CodedElement(BodyPositionCodes.SupineCode, BodyPositionCodes.SupineDisplay));
+            CodedElement(BodyPositionCodes.SupineCode, BodyPositionCodes.SupineDisplay),
+            deviceSerial);
 
         return message.SerializeMessage(false);
     }
@@ -87,15 +99,16 @@ public sealed class Hl7ExportService(AppDbContext db)
         int systolic,
         int diastolic,
         int mean,
-        string bodyPosition)
+        string bodyPosition,
+        string deviceSerial)
     {
-        message.AddNewSegment(CreateObservation(startSetId, "NM", CodedElement(VitalLoincCodes.PulmonaryArterySystolic, VitalLoincDisplays.PulmonaryArterySystolic), observationSubId, systolic.ToString(), UcumUnits.MmHg));
-        message.AddNewSegment(CreateObservation(startSetId + 1, "NM", CodedElement(VitalLoincCodes.PulmonaryArteryDiastolic, VitalLoincDisplays.PulmonaryArteryDiastolic), observationSubId, diastolic.ToString(), UcumUnits.MmHg));
-        message.AddNewSegment(CreateObservation(startSetId + 2, "NM", CodedElement(VitalLoincCodes.PulmonaryArteryMean, VitalLoincDisplays.PulmonaryArteryMean), observationSubId, mean.ToString(), UcumUnits.MmHg));
-        message.AddNewSegment(CreateObservation(startSetId + 3, "CWE", CodedElement(VitalLoincCodes.BodyPosition, VitalLoincDisplays.BodyPosition), observationSubId, bodyPosition, string.Empty));
+        message.AddNewSegment(CreateObservation(startSetId, "NM", CodedElement(VitalLoincCodes.PulmonaryArterySystolic, VitalLoincDisplays.PulmonaryArterySystolic), observationSubId, systolic.ToString(), UcumUnits.MmHg, deviceSerial));
+        message.AddNewSegment(CreateObservation(startSetId + 1, "NM", CodedElement(VitalLoincCodes.PulmonaryArteryDiastolic, VitalLoincDisplays.PulmonaryArteryDiastolic), observationSubId, diastolic.ToString(), UcumUnits.MmHg, deviceSerial));
+        message.AddNewSegment(CreateObservation(startSetId + 2, "NM", CodedElement(VitalLoincCodes.PulmonaryArteryMean, VitalLoincDisplays.PulmonaryArteryMean), observationSubId, mean.ToString(), UcumUnits.MmHg, deviceSerial));
+        message.AddNewSegment(CreateObservation(startSetId + 3, "CWE", CodedElement(VitalLoincCodes.BodyPosition, VitalLoincDisplays.BodyPosition), observationSubId, bodyPosition, string.Empty, deviceSerial));
     }
 
-    private static Segment CreateObservation(int setId, string valueType, string identifier, string observationSubId, string value, string units) =>
+    private static Segment CreateObservation(int setId, string valueType, string identifier, string observationSubId, string value, string units, string deviceSerial) =>
         CreateSegment("OBX",
             setId.ToString(),
             valueType,
@@ -103,11 +116,18 @@ public sealed class Hl7ExportService(AppDbContext db)
             observationSubId,
             value,
             units,
-            string.Empty,
-            string.Empty,
-            string.Empty,
-            string.Empty,
-            "F");
+            string.Empty,   // OBX-7  References Range
+            string.Empty,   // OBX-8  Abnormal Flags
+            string.Empty,   // OBX-9  Probability
+            string.Empty,   // OBX-10 Nature of Abnormal Test
+            "F",            // OBX-11 Observation Result Status
+            string.Empty,   // OBX-12 Effective Date of Reference Range
+            string.Empty,   // OBX-13 User Defined Access Checks
+            string.Empty,   // OBX-14 Date/Time of the Observation
+            string.Empty,   // OBX-15 Producer's ID
+            string.Empty,   // OBX-16 Responsible Observer
+            string.Empty,   // OBX-17 Observation Method
+            SanitizeComponent(deviceSerial)); // OBX-18 Equipment Instance Identifier
 
     private static Segment CreateSegment(string name, params string[] fields)
     {
@@ -119,6 +139,15 @@ public sealed class Hl7ExportService(AppDbContext db)
 
         return segment;
     }
+
+    private static string PatientSexCode(Sex? sex) => sex switch
+    {
+        Sex.Female => "F",
+        Sex.Male => "M",
+        Sex.Other => "O",
+        Sex.Unknown => "U",
+        _ => "U"
+    };
 
     private static string ComponentValue(params string[] components) =>
         string.Join('^', components.Select(SanitizeComponent));

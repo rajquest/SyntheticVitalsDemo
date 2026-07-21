@@ -42,7 +42,8 @@ public sealed class RhythmFhirExportService(AppDbContext db)
         if (vitals is null) return null;
 
         var device = vitals.Patient is not null
-            ? await db.Devices.FirstOrDefaultAsync(x => x.PatientGuid == vitals.Patient.PatientGuid)
+            ? await db.Devices.FirstOrDefaultAsync(x => x.PatientGuid == vitals.Patient.PatientGuid
+                                                     && x.DateTimeDeactivated == null)
             : null;
 
         var raw = Serializer.SerializeToString(BuildBundle(vitals, device));
